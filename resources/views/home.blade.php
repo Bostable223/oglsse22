@@ -333,7 +333,7 @@
 const featuredSlider = {
     currentSlide: 0,
     totalSlides: {{ $featuredListings->count() }},
-    cardWidth: 285,
+    cardWidth: 320,
     gap: 24,
     
     next() {
@@ -365,7 +365,7 @@ const featuredSlider = {
 const newSlider = {
     currentSlide: 0,
     totalSlides: {{ $newListings->count() }},
-    cardWidth: 285,
+    cardWidth: 320,
     gap: 24,
     
     next() {
