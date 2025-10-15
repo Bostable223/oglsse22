@@ -1,16 +1,16 @@
-<div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col {{ $featured ?? false ? 'ring-2 ring-yellow-400' : '' }}">
-    <a href="{{ route('listings.show', $listing->slug) }}" class="block flex-1 flex flex-col">
-        <!-- Image -->
-        <div class="relative h-48 bg-gray-200">
+<div class="listing-card bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full">
+    <a href="{{ route('listings.show', $listing->slug) }}" class="flex flex-col h-full listing-card-link">
+        <!-- Image - Fixed Height (Grid View) -->
+        <div class="relative h-48 bg-gray-200 flex-shrink-0 listing-card-image">
             @if($listing->primaryImage)
-                <img src="{{ $listing->primaryImage->url() }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                <img src="{{ listing_image($listing->primaryImage->image_path, 'thumbnail') }}" alt="{{ $listing->title }}" loading="lazy" class="w-full h-full object-cover">
             @else
                 <div class="w-full h-full flex items-center justify-center text-gray-400">
                     <i class="fas fa-image text-4xl"></i>
                 </div>
             @endif
 
-            <!-- Featured Badge -->
+             <!-- Featured Badge -->
             @if($listing->isFeaturedActive())
                 <div class="absolute top-2 left-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     <i class="fas fa-star"></i> Istaknuto
@@ -24,11 +24,6 @@
                 </div>
             @endif
 
-            <!-- Listing Type Badge -->
-            <div class="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                {{ $listing->listing_type == 'sale' ? 'Prodaja' : 'Izdavanje' }}
-            </div>
-
             <!-- Favorite Button (Bottom Right) -->
             @auth
                 <form action="{{ route('listings.favorite', $listing->id) }}" method="POST" class="absolute bottom-2 right-2" onclick="event.stopPropagation()">
@@ -41,7 +36,7 @@
         </div>
 
         <!-- Content -->
-        <div class="p-4 flex-1 flex flex-col">
+        <div class="p-4 flex flex-col flex-grow listing-card-content">
             <!-- Category -->
             <div class="text-xs text-gray-500 mb-2">
                 <i class="fas fa-tag"></i> {{ $listing->category->name }}

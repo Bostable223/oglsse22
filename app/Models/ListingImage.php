@@ -28,17 +28,14 @@ class ListingImage extends Model
         return $this->belongsTo(Listing::class);
     }
 
-    public function url(): string
+    public function url($size = 'large')
     {
-        return Storage::url($this->image_path);
+    return listing_image($this->image_path, $size);
     }
 
-    public function thumbnailUrl(): string
+    public function thumbnailUrl()
     {
-        if ($this->thumbnail_path) {
-            return Storage::url($this->thumbnail_path);
-        }
-        return $this->url();
+    return listing_image($this->image_path, 'thumbnail');
     }
 
     protected static function boot()
@@ -54,4 +51,8 @@ class ListingImage extends Model
             }
         });
     }
+
+    
+
+    
 }

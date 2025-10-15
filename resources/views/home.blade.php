@@ -88,7 +88,7 @@
                                         </button>
                                         <button type="button" onclick="selectListingType(event, 'rent')" data-type="rent"
                                                 class="listing-type-btn flex-1 px-3 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition-colors text-center font-medium text-sm">
-                                            Rent
+                                            Izdavanje
                                         </button>
                                     </div>
                                     <input type="hidden" name="listing_type" id="listingTypeInput" value="">
@@ -195,20 +195,21 @@
 @if($featuredListings->count() > 0)
 <div class="py-16 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between mb-12">
-            <div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-2">Istaknuti oglasi</h2>
-                <p class="text-lg text-gray-600">Pregledajte naše najpopularnije nekretnine</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="featuredSlider.prev()" class="bg-white p-3 rounded-full shadow hover:shadow-lg transition-shadow">
-                    <i class="fas fa-chevron-left text-gray-700"></i>
-                </button>
-                <button onclick="featuredSlider.next()" class="bg-white p-3 rounded-full shadow hover:shadow-lg transition-shadow">
-                    <i class="fas fa-chevron-right text-gray-700"></i>
-                </button>
-            </div>
+        <div class="mb-12">
+             <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-900 mb-2">Istaknuti oglasi</h2>
+            <p class="text-lg text-gray-600">Pregledajte naše najpopularnije nekretnine</p>
         </div>
+        <div class="flex gap-3">
+            <button onclick="featuredSlider.prev()" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button onclick="featuredSlider.next()" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
         
         <!-- Changed: Added padding and changed overflow-hidden to overflow-x-clip -->
         <div class="relative -mx-4 px-4 py-4" style="overflow-x: clip;">
@@ -228,20 +229,21 @@
 @if($newListings->count() > 0)
 <div class="py-16 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between mb-12">
-            <div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-2">Novi oglasi</h2>
-                <p class="text-lg text-gray-600">Najnovije dodati oglasi</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="newSlider.prev()" class="bg-white p-3 rounded-full shadow hover:shadow-lg transition-shadow">
-                    <i class="fas fa-chevron-left text-gray-700"></i>
-                </button>
-                <button onclick="newSlider.next()" class="bg-white p-3 rounded-full shadow hover:shadow-lg transition-shadow">
-                    <i class="fas fa-chevron-right text-gray-700"></i>
-                </button>
-            </div>
+       <div class="mb-12">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-900 mb-2">Novi oglasi</h2>
+            <p class="text-lg text-gray-600">Najnovije dodati oglasi</p>
         </div>
+        <div class="flex gap-3">
+            <button onclick="newSlider.prev()" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button onclick="newSlider.next()" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
         
         <!-- Changed: Added padding and changed overflow-hidden to overflow-x-clip -->
         <div class="relative -mx-4 px-4 py-4" style="overflow-x: clip;">
@@ -333,7 +335,7 @@
 const featuredSlider = {
     currentSlide: 0,
     totalSlides: {{ $featuredListings->count() }},
-    cardWidth: 320,
+    cardWidth: 285,
     gap: 24,
     
     next() {
@@ -365,7 +367,7 @@ const featuredSlider = {
 const newSlider = {
     currentSlide: 0,
     totalSlides: {{ $newListings->count() }},
-    cardWidth: 320,
+    cardWidth: 285,
     gap: 24,
     
     next() {

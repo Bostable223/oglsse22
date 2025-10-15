@@ -3,275 +3,311 @@
 @section('title', $listing->title)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url()->previous() }}" class="text-blue-600 hover:text-blue-700">
+            <i class="fas fa-arrow-left mr-2"></i> Nazad na pretragu
+        </a>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {{-- Main content --}}
+        
+        <!-- Main Content -->
         <div class="lg:col-span-2">
-            {{-- Image Gallery --}}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            
+            <!-- Image Gallery -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
                 @if($listing->images->count() > 0)
-                    {{-- Main image --}}
-                    <div class="relative">
-                        <img 
-                            id="mainImage"
-                            src="{{ listing_image($listing->images->first()->image_path, 'large') }}"
-                            alt="{{ $listing->title }}"
-                            class="w-full h-96 object-cover cursor-pointer"
-                            onclick="openLightbox(0)"
-                        >
+                    <!-- Main Image -->
+                    <div class="relative h-96 bg-gray-200" id="mainImage">
+                        <img src="{{ listing_image($listing->images->first()->image_path, 'large') }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
                         
-                        {{-- Image counter --}}
-                        <div class="absolute bottom-4 right-4 bg-black bg-opacity-60 text-white px-3 py-2 rounded">
-                            <i class="fas fa-camera"></i> 
-                            <span id="imageCounter">1</span> / {{ $listing->images->count() }}
-                        </div>
+                        <!-- Featured Badge -->
+                        @if($listing->isFeaturedActive())
+                            <div class="absolute top-4 left-4 bg-yellow-500 text-white px-4 py-2 rounded-full font-semibold">
+                                <i class="fas fa-star"></i> Istaknuto
+                            </div>
+                        @endif
                     </div>
 
-                    {{-- Thumbnail strip --}}
+                    <!-- Thumbnail Gallery -->
                     @if($listing->images->count() > 1)
-                        <div class="p-4 bg-gray-50">
-                            <div class="grid grid-cols-6 gap-2">
-                                @foreach($listing->images as $index => $image)
-                                    <img 
-                                        src="{{ listing_image($image->image_path, 'thumbnail') }}"
-                                        alt="Slika {{ $index + 1 }}"
-                                        class="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75 transition thumbnail-image {{ $index === 0 ? 'ring-2 ring-blue-500' : '' }}"
-                                        onclick="changeMainImage({{ $index }})"
-                                        data-large="{{ listing_image($image->image_path, 'large') }}"
-                                        data-index="{{ $index }}"
-                                    >
-                                @endforeach
-                            </div>
+                        <div class="p-4 grid grid-cols-6 gap-2">
+                            @foreach($listing->images as $image)
+                                <div class="cursor-pointer hover:opacity-75 transition-opacity">
+                                    <img src="{{ listing_image($image->image_path, 'thumbnail') }}" alt="Slika {{ $loop->iteration }}" 
+                                         class="w-full h-20 object-cover rounded"
+                                         onclick="document.getElementById('mainImage').querySelector('img').src = '{{ listing_image($image->image_path, 'large') }}'">
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 @else
-                    <img 
-                        src="{{ asset('images/no-image.jpg') }}" 
-                        alt="Nema slike"
-                        class="w-full h-96 object-cover"
-                    >
+                    <div class="h-96 bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-image text-6xl text-gray-400"></i>
+                    </div>
                 @endif
             </div>
 
-            {{-- Listing details --}}
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ $listing->title }}</h1>
-                        <div class="flex items-center text-gray-600 space-x-4">
-                            <span><i class="fas fa-map-marker-alt"></i> {{ $listing->location }}</span>
-                            <span><i class="far fa-clock"></i> {{ time_ago($listing->created_at) }}</span>
-                            <span><i class="far fa-eye"></i> {{ $listing->views }} pregleda</span>
+            <!-- Listing Details -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <!-- Status Badge (only for owner/admin) -->
+                @if(auth()->check() && (auth()->id() === $listing->user_id || auth()->user()->isAdmin()))
+                    <div class="mb-4">
+                        <span class="px-3 py-1 rounded-full text-sm font-semibold
+                            @if($listing->status === 'active') bg-green-100 text-green-800
+                            @elseif($listing->status === 'pending') bg-yellow-100 text-yellow-800
+                            @elseif($listing->status === 'rejected') bg-red-100 text-red-800
+                            @else bg-gray-100 text-gray-800
+                            @endif">
+                            Status: {{ ucfirst($listing->status) }}
+                        </span>
+                    </div>
+                @endif
+
+                <!-- Title and Category -->
+                <div class="mb-4">
+                    <div class="text-sm text-gray-500 mb-2">
+                        <i class="fas fa-tag"></i> {{ $listing->category->name }}
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ $listing->title }}</h1>
+                </div>
+
+                <!-- Location -->
+                <div class="text-lg text-gray-600 mb-6">
+                    <i class="fas fa-map-marker-alt text-red-500"></i> 
+                    {{ $listing->city }}{{ $listing->municipality ? ', ' . $listing->municipality : '' }}
+                    @if($listing->address)
+                        <br>
+                        <span class="text-sm ml-5">{{ $listing->address }}</span>
+                    @endif
+                </div>
+
+                <!-- Price -->
+                <div class="mb-6 pb-6 border-b border-gray-200">
+                    <div class="text-4xl font-bold text-blue-600">
+                        {{ $listing->formattedPrice() }}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        {{ $listing->listing_type == 'sale' ? 'Prodajna cena' : 'Mesečna kirija' }}
+                    </div>
+                </div>
+
+                <!-- Property Details Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    @if($listing->area)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-gray-500 text-sm mb-1"><i class="fas fa-ruler-combined"></i> Površina</div>
+                            <div class="text-lg font-semibold">{{ $listing->area }} m²</div>
+                        </div>
+                    @endif
+
+                    @if($listing->rooms)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-gray-500 text-sm mb-1"><i class="fas fa-bed"></i> Sobe</div>
+                            <div class="text-lg font-semibold">{{ $listing->rooms }}</div>
+                        </div>
+                    @endif
+
+                    @if($listing->bathrooms)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-gray-500 text-sm mb-1"><i class="fas fa-bath"></i> Kupatila</div>
+                            <div class="text-lg font-semibold">{{ $listing->bathrooms }}</div>
+                        </div>
+                    @endif
+
+                    @if($listing->floor !== null)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-gray-500 text-sm mb-1"><i class="fas fa-building"></i> Sprat</div>
+                            <div class="text-lg font-semibold">
+                                {{ $listing->floor }}{{ $listing->total_floors ? '/' . $listing->total_floors : '' }}
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($listing->year_built)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-gray-500 text-sm mb-1"><i class="fas fa-calendar"></i> Godina gradnje</div>
+                            <div class="text-lg font-semibold">{{ $listing->year_built }}</div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Features -->
+                @if($listing->features && count($listing->features) > 0)
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Dodatne karakteristike</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            @foreach($listing->features as $feature)
+                                <div class="flex items-center text-gray-700">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    {{ $feature }}
+                                </div>
+                            @endforeach
                         </div>
                     </div>
-
-                    {{-- Favorite button --}}
-                    @auth
-                        <form action="{{ route('listings.favorite', $listing) }}" method="POST">
-                            @csrf
-                            <button 
-                                type="submit" 
-                                class="flex items-center space-x-2 px-4 py-2 rounded-lg border {{ auth()->user()->favorites->contains($listing->id) ? 'bg-red-50 border-red-500 text-red-600' : 'bg-gray-50 border-gray-300 text-gray-600' }} hover:bg-red-100 transition"
-                            >
-                                <i class="fa{{ auth()->user()->favorites->contains($listing->id) ? 's' : 'r' }} fa-heart"></i>
-                                <span>{{ auth()->user()->favorites->contains($listing->id) ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene' }}</span>
-                            </button>
-                        </form>
-                    @endauth
-                </div>
-
-                <div class="border-t pt-4">
-                    <div class="text-4xl font-bold text-blue-600 mb-4">
-                        {{ format_price($listing->price) }}
-                    </div>
-
-                    <div class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        {{ $listing->category->name }}
-                    </div>
-                </div>
-            </div>
-
-            {{-- Description --}}
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Opis</h2>
-                <div class="text-gray-700 whitespace-pre-line">{{ $listing->description }}</div>
-            </div>
-
-            {{-- Action buttons for owner --}}
-            @can('update', $listing)
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">Upravljaj oglasom</h3>
-                    <div class="flex space-x-4">
-                        <a 
-                            href="{{ route('listings.edit', $listing) }}" 
-                            class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition text-center"
-                        >
-                            <i class="fas fa-edit"></i> Izmeni oglas
-                        </a>
-                        <form action="{{ route('listings.destroy', $listing) }}" method="POST" class="flex-1" onsubmit="return confirm('Da li ste sigurni da želite da obrišete ovaj oglas?')">
-                            @csrf
-                            @method('DELETE')
-                            <button 
-                                type="submit" 
-                                class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition"
-                            >
-                                <i class="fas fa-trash"></i> Obriši oglas
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @endcan
-        </div>
-
-        {{-- Sidebar --}}
-        <div class="lg:col-span-1">
-            {{-- Contact card --}}
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6 sticky top-4">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Kontakt informacije</h3>
-                
-                <div class="flex items-center mb-4">
-                    <img 
-                        src="{{ avatar_image($listing->user->avatar) }}" 
-                        alt="{{ $listing->user->name }}"
-                        class="w-12 h-12 rounded-full mr-3"
-                    >
-                    <div>
-                        <div class="font-semibold text-gray-800">{{ $listing->user->name }}</div>
-                        <div class="text-sm text-gray-600">Član od {{ format_date($listing->user->created_at) }}</div>
-                    </div>
-                </div>
-
-                @if($listing->contact_phone)
-                    <a 
-                        href="tel:{{ $listing->contact_phone }}" 
-                        class="block w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition text-center mb-3"
-                    >
-                        <i class="fas fa-phone"></i> {{ $listing->contact_phone }}
-                    </a>
                 @endif
 
-                <a 
-                    href="mailto:{{ $listing->user->email }}" 
-                    class="block w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition text-center"
-                >
-                    <i class="fas fa-envelope"></i> Pošalji poruku
-                </a>
+                <!-- Description -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Opis</h3>
+                    <div class="text-gray-700 whitespace-pre-line">{{ $listing->description }}</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="mt-6 pt-6 border-t border-gray-200 flex items-center gap-6 text-sm text-gray-500">
+                    <span><i class="fas fa-eye"></i> {{ $listing->views }} pregleda</span>
+                    <span><i class="fas fa-clock"></i> Objavljeno {{ $listing->published_at->diffForHumans() }}</span>
+                </div>
             </div>
 
-            {{-- Safety tips --}}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 class="font-bold text-gray-800 mb-2">
-                    <i class="fas fa-shield-alt text-yellow-600"></i> Saveti za bezbednost
-                </h4>
-                <ul class="text-sm text-gray-700 space-y-2">
-                    <li>• Sastanite se na javnom mestu</li>
-                    <li>• Proverite proizvod pre plaćanja</li>
-                    <li>• Nikada ne šaljite novac unapred</li>
-                    <li>• Budite oprezni sa sumnjivim ponudama</li>
-                </ul>
+            <!-- Recommended Listings (Bottom) -->
+            @if($similarListings->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-2xl font-bold mb-6">Preporučeni oglasi</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    @foreach($similarListings as $similar)
+                        @include('partials.listing-card', ['listing' => $similar])
+                    @endforeach
+                </div>
             </div>
+            @endif
         </div>
-    </div>
 
-    {{-- Related listings --}}
-    @if($relatedListings->count() > 0)
-        <div class="mt-12">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Slični oglasi</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                @foreach($relatedListings as $relatedListing)
-                    @include('partials.listing-card', ['listing' => $relatedListing])
-                @endforeach
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            
+            <!-- Contact Card -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Kontakt informacije</h3>
+                
+                <!-- Owner Info -->
+                <div class="flex items-center mb-4 pb-4 border-b border-gray-200">
+                    <img src="{{ $listing->user->avatarUrl() }}" alt="{{ $listing->user->name }}" class="w-12 h-12 rounded-full mr-3">
+                    <div>
+                        <div class="font-semibold">{{ $listing->contact_name ?? $listing->user->name }}</div>
+                        <div class="text-sm text-gray-500">Prodavac</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3 mb-6">
+                    <!-- Phone Button (Click to Reveal) -->
+                    @if($listing->contact_phone)
+                        <button 
+                            onclick="revealPhone()" 
+                            id="phoneButton"
+                            class="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition"
+                        >
+                            <i class="fas fa-phone mr-2"></i> Prikaži broj telefona
+                        </button>
+                        <a 
+                            href="tel:{{ $listing->contact_phone }}" 
+                            id="phoneLink"
+                            class="hidden w-full bg-green-600 text-white text-center px-6 py-3 rounded-lg hover:bg-green-700 font-semibold block"
+                        >
+                            <i class="fas fa-phone mr-2"></i> {{ $listing->contact_phone }}
+                        </a>
+                    @endif
+
+                    @auth
+                        <!-- Favorite Button -->
+                        <form action="{{ route('listings.favorite', $listing->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="block w-full {{ $isFavorited ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-700' }} text-center px-6 py-3 rounded-lg hover:bg-gray-200 font-semibold">
+                                <i class="fas fa-heart mr-2"></i> 
+                                {{ $isFavorited ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene' }}
+                            </button>
+                        </form>
+
+                        <!-- Edit/Delete (if owner) -->
+                        @if(auth()->id() === $listing->user_id || auth()->user()->isAdmin())
+                            <a href="{{ route('listings.edit', $listing->slug) }}" class="block w-full bg-yellow-100 text-yellow-700 text-center px-6 py-3 rounded-lg hover:bg-yellow-200 font-semibold">
+                                <i class="fas fa-edit mr-2"></i> Izmeni oglas
+                            </a>
+
+                            <form action="{{ route('listings.destroy', $listing->slug) }}" method="POST" onsubmit="return confirm('Da li ste sigurni da želite obrisati ovaj oglas?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="block w-full bg-red-100 text-red-700 text-center px-6 py-3 rounded-lg hover:bg-red-200 font-semibold">
+                                    <i class="fas fa-trash mr-2"></i> Obriši oglas
+                                </button>
+                            </form>
+                        @endif
+                    @endauth
+                </div>
             </div>
-        </div>
-    @endif
-</div>
 
-{{-- Lightbox Modal --}}
-<div id="lightbox" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex items-center justify-center">
-    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300">
-        <i class="fas fa-times"></i>
-    </button>
-
-    <button onclick="previousImage()" class="absolute left-4 text-white text-4xl hover:text-gray-300">
-        <i class="fas fa-chevron-left"></i>
-    </button>
-
-    <button onclick="nextImage()" class="absolute right-4 text-white text-4xl hover:text-gray-300">
-        <i class="fas fa-chevron-right"></i>
-    </button>
-
-    <div class="max-w-6xl max-h-screen p-4">
-        <img id="lightboxImage" src="" alt="" class="max-w-full max-h-screen object-contain">
-        <div class="text-center text-white mt-4">
-            <span id="lightboxCounter"></span>
+            <!-- Recently Viewed Listings -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Nedavno pregledani</h3>
+                <div id="recentlyViewed" class="space-y-4">
+                    <!-- Will be populated by JavaScript -->
+                    <p class="text-sm text-gray-500 text-center py-4">Nema nedavno pregledanih oglasa</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @push('scripts')
 <script>
-    const images = @json($listing->images->map(function($img) {
-        return [
-            'thumbnail' => listing_image($img->image_path, 'thumbnail'),
-            'large' => listing_image($img->image_path, 'large')
-        ];
-    }));
+// Phone Number Reveal
+function revealPhone() {
+    document.getElementById('phoneButton').classList.add('hidden');
+    document.getElementById('phoneLink').classList.remove('hidden');
+}
 
-    let currentImageIndex = 0;
+// Recently Viewed Listings
+const currentListing = {
+    id: {{ $listing->id }},
+    slug: '{{ $listing->slug }}',
+    title: '{{ addslashes($listing->title) }}',
+    price: '{{ $listing->formattedPrice() }}',
+    city: '{{ $listing->city }}',
+    image: '{{ $listing->primaryImage ? listing_image($listing->primaryImage->image_path, "thumbnail") : "" }}'
+};
 
-    function changeMainImage(index) {
-        currentImageIndex = index;
-        document.getElementById('mainImage').src = images[index].large;
-        document.getElementById('imageCounter').textContent = index + 1;
+// Get recently viewed from localStorage
+let recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
 
-        // Update thumbnail borders
-        document.querySelectorAll('.thumbnail-image').forEach((thumb, i) => {
-            if (i === index) {
-                thumb.classList.add('ring-2', 'ring-blue-500');
-            } else {
-                thumb.classList.remove('ring-2', 'ring-blue-500');
-            }
-        });
-    }
+// Remove current listing if it exists
+recentlyViewed = recentlyViewed.filter(item => item.id !== currentListing.id);
 
-    function openLightbox(index) {
-        currentImageIndex = index;
-        document.getElementById('lightbox').classList.remove('hidden');
-        document.getElementById('lightbox').classList.add('flex');
-        updateLightboxImage();
-        document.body.style.overflow = 'hidden';
-    }
+// Add current listing to the beginning
+recentlyViewed.unshift(currentListing);
 
-    function closeLightbox() {
-        document.getElementById('lightbox').classList.add('hidden');
-        document.getElementById('lightbox').classList.remove('flex');
-        document.body.style.overflow = 'auto';
-    }
+// Keep only last 5
+recentlyViewed = recentlyViewed.slice(0, 5);
 
-    function nextImage() {
-        currentImageIndex = (currentImageIndex + 1) % images.length;
-        updateLightboxImage();
-    }
+// Save back to localStorage
+localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
 
-    function previousImage() {
-        currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-        updateLightboxImage();
-    }
+// Display recently viewed (excluding current)
+const recentlyViewedContainer = document.getElementById('recentlyViewed');
+const displayRecent = recentlyViewed.filter(item => item.id !== currentListing.id).slice(0, 4);
 
-    function updateLightboxImage() {
-        document.getElementById('lightboxImage').src = images[currentImageIndex].large;
-        document.getElementById('lightboxCounter').textContent = 
-            `${currentImageIndex + 1} / ${images.length}`;
-    }
-
-    // Keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        if (!document.getElementById('lightbox').classList.contains('hidden')) {
-            if (e.key === 'Escape') closeLightbox();
-            if (e.key === 'ArrowLeft') previousImage();
-            if (e.key === 'ArrowRight') nextImage();
-        }
-    });
+if (displayRecent.length > 0) {
+    recentlyViewedContainer.innerHTML = displayRecent.map(item => `
+        <a href="/listings/${item.slug}" class="block hover:bg-gray-50 p-3 rounded-lg transition-colors">
+            <div class="flex gap-3">
+                <div class="w-20 h-20 bg-gray-200 rounded flex-shrink-0">
+                    ${item.image ? 
+                        `<img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover rounded">` :
+                        `<div class="w-full h-full flex items-center justify-center text-gray-400"><i class="fas fa-image"></i></div>`
+                    }
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">${item.title}</h4>
+                    <p class="text-blue-600 font-bold text-sm">${item.price}</p>
+                    <p class="text-xs text-gray-500"><i class="fas fa-map-marker-alt"></i> ${item.city}</p>
+                </div>
+            </div>
+        </a>
+    `).join('');
+}
 </script>
 @endpush
 @endsection

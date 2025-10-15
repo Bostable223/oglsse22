@@ -36,6 +36,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/listings/{slug}', [ListingController::class, 'update'])->name('listings.update');
     Route::delete('/listings/{slug}', [ListingController::class, 'destroy'])->name('listings.destroy');
     
+    // Delete single image from listing
+    Route::delete('/listings/{slug}/images/{image}', [ListingController::class, 'deleteImage'])->name('listings.images.delete');
+    
     // Favorite functionality
     Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])
          ->name('listings.favorite');
