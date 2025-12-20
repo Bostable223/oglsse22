@@ -81,4 +81,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/categories', [AdminController::class, 'storeCategory'])->name('categories.store');
     Route::put('/categories/{id}', [AdminController::class, 'updateCategory'])->name('categories.update');
     Route::delete('/categories/{id}', [AdminController::class, 'deleteCategory'])->name('categories.delete');
+
+    // Package Management Routes
+    Route::get('/packages', [AdminController::class, 'packages'])->name('packages');
+    Route::post('/packages', [AdminController::class, 'storePackage'])->name('packages.store');
+    Route::put('/packages/{id}', [AdminController::class, 'updatePackage'])->name('packages.update');
+    Route::delete('/packages/{id}', [AdminController::class, 'deletePackage'])->name('packages.delete');
+    Route::post('/packages/{id}/toggle-active', [AdminController::class, 'togglePackageActive'])->name('packages.toggle-active');
 });

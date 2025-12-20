@@ -293,4 +293,117 @@ class AdminController extends Controller
 
         return back()->with('success', 'Kategorija je obrisana!');
     }
+
+    // app/Http/Controllers/AdminController.php
+
+/**
+ * Show all packages
+ * 
+ * Route: GET /admin/packages
+ */
+public function packages()
+{
+    $packages = Package::withCount('listings')
+                       ->orderBy('type')
+                       ->orderBy('order')
+                       ->get();
+    
+    return view('admin.packages', compact('packages'));
+}
+
+/**
+ * Store new package
+ * 
+ * Route: POST /admin/packages
+ */
+public function storePackage(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'type' => 'required|in:top,featured',
+        'duration_days' => 'required|integer|min:1|max:365',
+        'price' => 'required|numeric|min:0',
+        'currency' => 'required|in:RSD,EUR,USD',
+        'order' => 'nullable|integer',
+        'features' => 'nullable|array',
+        'features.*' => 'string',
+    ]);
+
+    $validated['slug'] = \Str::slug($validated['name']) . '-' . \Str::random(6);
+    $validated['is_active'] = true;
+
+    Package::create($validated);
+
+    return back()->with('success', 'Paket je uspešno kreiran!');
+}
+
+/**
+ * Update package
+ * 
+ * Route: PUT /admin/packages/{id}
+ */
+public function updatePackage(Request $request, $id)
+{
+    $package = Package::findOrFail($id);
+
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'type' => 'required|in:top,featured',
+        'duration_days' => 'required|integer|min:1|max:365',
+        'price' => 'required|numeric|min:0',
+        'currency' => 'required|in:RSD,EUR,USD',
+        'order' => 'nullable|integer',
+        'is_active' => 'boolean',
+        'features' => 'nullable|array',
+        'features.*' => 'string',
+    ]);
+
+    // Keep the same slug unless name changed significantly
+    if ($validated['name'] !== $package->name) {
+        $validated['slug'] = \Str::slug($validated['name']) . '-' . \Str::random(6);
+    }
+
+    $package->update($validated);
+
+    return back()->with('success', 'Paket je uspešno ažuriran!');
+}
+
+/**
+ * Toggle package active status
+ * 
+ * Route: POST /admin/packages/{id}/toggle-active
+ */
+public function togglePackageActive($id)
+{
+    $package = Package::findOrFail($id);
+    
+    $package->update([
+        'is_active' => !$package->is_active,
+    ]);
+
+    $message = $package->is_active ? 'Paket je aktiviran!' : 'Paket je deaktiviran!';
+    
+    return back()->with('success', $message);
+}
+
+/**
+ * Delete package
+ * 
+ * Route: DELETE /admin/packages/{id}
+ */
+public function deletePackage($id)
+{
+    $package = Package::findOrFail($id);
+    
+    // Check if package is being used by any listings
+    if ($package->listings()->count() > 0) {
+        return back()->withErrors('Ne možete obrisati paket koji se koristi u oglasima!');
+    }
+
+    $package->delete();
+
+    return back()->with('success', 'Paket je obrisan!');
+}
 }

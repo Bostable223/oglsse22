@@ -98,6 +98,8 @@
                 </div>
             </div>
         </a>
+        
+
     </div>
 
     <!-- Pending Listings -->
