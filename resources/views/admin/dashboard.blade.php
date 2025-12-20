@@ -100,6 +100,19 @@
         </a>
         
 
+                    <!-- Add this as a 4th card in the Quick Actions grid -->
+            <a href="{{ route('admin.packages') }}" class="bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-full mr-4">
+                        <i class="fas fa-box text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg">Paketi</h3>
+                        <p class="text-orange-100 text-sm">Upravljaj paketima</p>
+                    </div>
+                </div>
+            </a>
+
     </div>
 
     <!-- Pending Listings -->

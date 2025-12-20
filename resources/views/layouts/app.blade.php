@@ -59,13 +59,10 @@
                                 </a>
                                 
                                 @if(auth()->user()->isAdmin())
-                                  <hr class="my-2">
-                                 <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-blue-600 hover:bg-gray-100">
-                                 <i class="fas fa-shield-alt mr-2"></i> Admin Panel
-                                 </a>
-                                    <a href="{{ route('admin.packages') }}" class="block px-4 py-2 text-blue-600 hover:bg-gray-100">
-                                  <i class="fas fa-box mr-2"></i> Paketi
-                                 </a>
+                                    <hr class="my-2">
+                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-blue-600 hover:bg-gray-100">
+                                        <i class="fas fa-shield-alt mr-2"></i> Admin Panel
+                                    </a>
                                 @endif
 
                                 <hr class="my-2">
