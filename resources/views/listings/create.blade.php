@@ -33,6 +33,27 @@
                 @enderror
             </div>
 
+            <!-- Listing Type - Button Style -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tip oglasa *</label>
+                <div class="flex gap-3">
+                    <button type="button" onclick="selectListingType('sale')" 
+                            class="listing-type-btn flex-1 px-6 py-3 border-2 rounded-lg font-semibold transition-all {{ old('listing_type', 'sale') == 'sale' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400' }}"
+                            data-type="sale">
+                        <i class="fas fa-tag mr-2"></i> Prodaja
+                    </button>
+                    <button type="button" onclick="selectListingType('rent')"
+                            class="listing-type-btn flex-1 px-6 py-3 border-2 rounded-lg font-semibold transition-all {{ old('listing_type') == 'rent' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400' }}"
+                            data-type="rent">
+                        <i class="fas fa-home mr-2"></i> Izdavanje
+                    </button>
+                </div>
+                <input type="hidden" name="listing_type" id="listingTypeInput" value="{{ old('listing_type', 'sale') }}">
+                @error('listing_type')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Title -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Naslov oglasa *</label>
@@ -56,43 +77,19 @@
                 @enderror
             </div>
 
-            <!-- Listing Type -->
+            <!-- Price in EUR only -->
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Tip oglasa *</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center">
-                        <input type="radio" name="listing_type" value="sale" {{ old('listing_type', 'sale') == 'sale' ? 'checked' : '' }} class="mr-2">
-                        <span>Prodaja</span>
-                    </label>
-                    <label class="flex items-center">
-                        <input type="radio" name="listing_type" value="rent" {{ old('listing_type') == 'rent' ? 'checked' : '' }} class="mr-2">
-                        <span>Izdavanje</span>
-                    </label>
-                </div>
-                @error('listing_type')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <!-- Price -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cena *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cena *</label>
+                <div class="relative">
                     <input type="number" name="price" value="{{ old('price') }}" required min="0" step="0.01"
                            placeholder="50000"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror">
-                    @error('price')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                           class="w-full px-4 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 font-semibold">EUR</div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Valuta *</label>
-                    <select name="currency" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <option value="RSD" {{ old('currency', 'RSD') == 'RSD' ? 'selected' : '' }}>RSD (Dinar)</option>
-                        <option value="EUR" {{ old('currency') == 'EUR' ? 'selected' : '' }}>EUR (Evro)</option>
-                        <option value="USD" {{ old('currency') == 'USD' ? 'selected' : '' }}>USD (Dolar)</option>
-                    </select>
-                </div>
+                <input type="hidden" name="currency" value="EUR">
+                @error('price')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
         </div>
 
@@ -187,12 +184,13 @@
                         'Kablovska TV', 'Internet', 'Telefon', 'Obezbeđenje',
                         'Namešten', 'Polunamešteno', 'Renoviran', 'Novogradnja'
                     ];
+                    $oldFeatures = old('features', []);
                 @endphp
                 
                 @foreach($features as $feature)
                     <label class="flex items-center">
                         <input type="checkbox" name="features[]" value="{{ $feature }}" 
-                               {{ in_array($feature, old('features', [])) ? 'checked' : '' }}
+                               {{ in_array($feature, $oldFeatures) ? 'checked' : '' }}
                                class="mr-2 text-blue-600">
                         <span class="text-sm">{{ $feature }}</span>
                     </label>
@@ -200,10 +198,19 @@
             </div>
         </div>
 
-        <!-- Images -->
+        <!-- Images with Drag & Drop Reordering -->
         <div class="mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-900">Fotografije</h2>
-            <p class="text-sm text-gray-600 mb-4">Dodajte slike vaše nekretnine (maksimalno 5MB po slici)</p>
+            <p class="text-sm text-gray-600 mb-4">Dodajte slike vaše nekretnine (maksimalno 5MB po slici). Prevucite slike da promenite redosled.</p>
+            
+            @if(session('validation_failed'))
+                <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Molimo vas ponovo dodajte slike jer su se izgubile tokom validacije.
+                    </p>
+                </div>
+            @endif
             
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <input type="file" name="images[]" multiple accept="image/*" 
@@ -216,12 +223,14 @@
                 </label>
             </div>
 
-            <!-- Image Preview -->
+            <!-- Image Preview with Drag & Drop -->
             <div id="imagePreview" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
             
-            @error('images.*')
-                <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-            @enderror
+            @if($errors->has('images.*') || $errors->has('images'))
+                <p class="text-red-500 text-sm mt-2">
+                    {{ $errors->first('images.*') ?? $errors->first('images') }}
+                </p>
+            @endif
         </div>
 
         <!-- Contact Information -->
@@ -268,32 +277,125 @@
 
 @push('scripts')
 <script>
-// Image Preview Function
-function previewImages(event) {
-    const preview = document.getElementById('imagePreview');
-    preview.innerHTML = '';
+// Listing Type Selection
+function selectListingType(type) {
+    document.getElementById('listingTypeInput').value = type;
     
-    const files = event.target.files;
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            const div = document.createElement('div');
-            div.className = 'relative';
-            div.innerHTML = `
-                <img src="${e.target.result}" class="w-full h-32 object-cover rounded-lg">
-                <div class="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                    ${i === 0 ? 'Glavna slika' : 'Slika ' + (i + 1)}
-                </div>
-            `;
-            preview.appendChild(div);
-        };
-        
-        reader.readAsDataURL(file);
-    }
+    document.querySelectorAll('.listing-type-btn').forEach(btn => {
+        if (btn.dataset.type === type) {
+            btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+            btn.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-700');
+        } else {
+            btn.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700');
+            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+        }
+    });
 }
+
+// Image Preview with Drag & Drop Reordering
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('imagePreview');
+    let selectedFiles = [];
+
+    imageInput.addEventListener('change', function(event) {
+        const files = Array.from(event.target.files);
+        if (files.length > 5) {
+            alert('Možete dodati najviše 5 slika.');
+            imageInput.value = '';
+            selectedFiles = [];
+            renderPreviews();
+            return;
+        }
+        selectedFiles = files;
+        renderPreviews();
+    });
+
+    function renderPreviews() {
+        previewContainer.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative group';
+            wrapper.dataset.index = index;
+
+            // Image
+            const img = document.createElement('img');
+            img.className = 'w-full h-32 object-cover rounded-lg';
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            wrapper.appendChild(img);
+
+            // Label showing which number
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold pointer-events-none';
+            labelDiv.textContent = index === 0 ? 'Glavna slika' : `Slika ${index + 1}`;
+            wrapper.appendChild(labelDiv);
+
+            // Remove button
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = '×';
+            btn.title = 'Remove';
+            btn.className = 'absolute top-2 right-2 bg-red-600 text-white w-7 h-7 rounded-full hover:bg-red-700 z-10';
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                selectedFiles.splice(index, 1);
+                renderPreviews();
+            });
+            wrapper.appendChild(btn);
+
+            // Make wrapper draggable
+            wrapper.draggable = true;
+            wrapper.addEventListener('dragstart', dragStart);
+            wrapper.addEventListener('dragover', dragOver);
+            wrapper.addEventListener('drop', drop);
+            wrapper.addEventListener('dragend', dragEnd);
+
+            previewContainer.appendChild(wrapper);
+        });
+
+        updateInputFiles();
+    }
+
+    let dragSrcIndex = null;
+
+    function dragStart(e) {
+        dragSrcIndex = Number(e.currentTarget.dataset.index);
+        e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function dragOver(e) {
+        e.preventDefault(); // necessary for drop
+    }
+
+    function drop(e) {
+        e.stopPropagation();
+        const target = e.currentTarget;
+        const dropIndex = Number(target.dataset.index);
+        if (dragSrcIndex !== null && dropIndex !== dragSrcIndex) {
+            // swap
+            const temp = selectedFiles[dragSrcIndex];
+            selectedFiles[dragSrcIndex] = selectedFiles[dropIndex];
+            selectedFiles[dropIndex] = temp;
+            renderPreviews();
+        }
+    }
+
+    function dragEnd(e) {
+        dragSrcIndex = null;
+    }
+
+    function updateInputFiles() {
+        const dataTransfer = new DataTransfer();
+        selectedFiles.forEach(file => dataTransfer.items.add(file));
+        imageInput.files = dataTransfer.files;
+    }
+});
 
 // Location Autocomplete Data
 const cities = [

@@ -36,17 +36,18 @@
                         </select>
                     </div>
 
-                    <!-- City Filter -->
+                    <!-- City Filter with Autocomplete -->
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Grad</label>
-                        <select name="city" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
-                            <option value="">Svi gradovi</option>
-                            @foreach($cities as $city)
-                                <option value="{{ $city }}" {{ request('city') == $city ? 'selected' : '' }}>
-                                    {{ $city }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grad</label>
+                    <input 
+                    type="text" 
+                    name="city" 
+                    id="city-autocomplete" 
+                    value="{{ request('city') }}"
+                    placeholder="Unesite grad"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    autocomplete="off"
+                     >
                     </div>
 
                     <!-- Listing Type -->
@@ -448,13 +449,27 @@ function toggleAdvancedFilters() {
 
 // Auto-show advanced filters if any are active
 document.addEventListener('DOMContentLoaded', function() {
-    const hasAdvancedFilters = {{ request()->hasAny(['price_min', 'price_max', 'area_min', 'area_max', 'bathrooms', 'floor', 'year_min', 'year_max', 'features']) ? 'true' : 'false' }};
+    const hasAdvancedFilters = {{ request()->hasAny(['city', 'price_min', 'price_max', 'area_min', 'area_max', 'bathrooms', 'floor', 'year_min', 'year_max', 'features']) ? 'true' : 'false' }};
     
     if (hasAdvancedFilters) {
         toggleAdvancedFilters();
     }
 });
 </script>
+
+<script>
+$(function() {
+    $('#city-autocomplete').autocomplete({
+        source: '/api/cities', // or whatever endpoint you're using
+        minLength: 2,
+        select: function(event, ui) {
+            $(this).val(ui.item.value);
+            this.form.submit(); // auto-submit after selecting
+        }
+    });
+});
+</script>
+
 
 
 

@@ -137,4 +137,17 @@ class Listing extends Model
         
         return $this->featured_until->isFuture();
     }
+
+    protected static function booted()
+        {
+     static::deleting(function ($listing) {
+        // Delete all related images when a listing is deleted (soft or hard)
+        foreach ($listing->images as $image) {
+            $image->delete(); // This will also delete the image file via ListingImage model
+        }
+     });
+    }
+
+
+
 }
