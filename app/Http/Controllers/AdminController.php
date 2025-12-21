@@ -456,4 +456,102 @@ public function updateUser(Request $request, $id)
         ->with('success', 'Korisnik je uspešno ažuriran!');
 }
 
+/**
+ * Show package analytics
+ * 
+ * Route: GET /admin/packages/analytics
+ */
+public function packageAnalytics()
+{
+    // Get all packages with usage statistics
+    $packages = Package::withCount('listings')
+                       ->orderBy('type')
+                       ->orderBy('order')
+                       ->get();
+
+    // Active promotions count
+    $activePromotions = [
+        'top' => Listing::where('is_top', true)
+                       ->where(function($q) {
+                           $q->whereNull('top_until')
+                             ->orWhere('top_until', '>', now());
+                       })
+                       ->count(),
+        'featured' => Listing::where('is_featured', true)
+                            ->where(function($q) {
+                                $q->whereNull('featured_until')
+                                  ->orWhere('featured_until', '>', now());
+                            })
+                            ->count(),
+    ];
+
+    // Revenue by package (assuming all are paid)
+    $revenueByPackage = Package::withCount('listings')
+                               ->get()
+                               ->map(function($package) {
+                                   return [
+                                       'package_name' => $package->name,
+                                       'total_revenue' => $package->price * $package->listings_count,
+                                       'usage_count' => $package->listings_count,
+                                   ];
+                               });
+
+    // Total revenue
+    $totalRevenue = $revenueByPackage->sum('total_revenue');
+    $totalSales = $revenueByPackage->sum('usage_count');
+
+    // Package usage by type
+    $usageByType = [
+        'top' => Package::where('type', 'top')->withCount('listings')->get()->sum('listings_count'),
+        'featured' => Package::where('type', 'featured')->withCount('listings')->get()->sum('listings_count'),
+        'free' => Listing::whereNull('package_id')->count(),
+    ];
+
+    // Most popular packages (top 5)
+    $popularPackages = Package::withCount('listings')
+                              ->orderBy('listings_count', 'desc')
+                              ->limit(5)
+                              ->get();
+
+    // Recent package purchases (last 10)
+    $recentPurchases = Listing::whereNotNull('package_id')
+                              ->with(['package', 'user'])
+                              ->latest('promoted_at')
+                              ->limit(10)
+                              ->get();
+
+    // Monthly trend (last 6 months)
+    $monthlyTrend = [];
+    for ($i = 5; $i >= 0; $i--) {
+        $date = now()->subMonths($i);
+        $monthlyTrend[] = [
+            'month' => $date->format('M Y'),
+            'count' => Listing::whereNotNull('package_id')
+                             ->whereYear('promoted_at', $date->year)
+                             ->whereMonth('promoted_at', $date->month)
+                             ->count(),
+            'revenue' => Listing::whereNotNull('package_id')
+                               ->whereYear('promoted_at', $date->year)
+                               ->whereMonth('promoted_at', $date->month)
+                               ->with('package')
+                               ->get()
+                               ->sum(function($listing) {
+                                   return $listing->package ? $listing->package->price : 0;
+                               }),
+        ];
+    }
+
+    return view('admin.package-analytics', compact(
+        'packages',
+        'activePromotions',
+        'revenueByPackage',
+        'totalRevenue',
+        'totalSales',
+        'usageByType',
+        'popularPackages',
+        'recentPurchases',
+        'monthlyTrend'
+    ));
+}
+
 }

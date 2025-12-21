@@ -113,6 +113,18 @@
                 </div>
             </a>
 
+                <a href="{{ route('admin.packages.analytics') }}" class="bg-gradient-to-r  from-purple-600 to-purple-700 text-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div class="flex items-center">
+                    <div class="bg-white bg-opacity-20 p-3 rounded-full mr-4">
+                        <i class="fas fa-chart-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg">Analitika paketa</h3>
+                        <p class="text-purple-100 text-sm">Pregled statistike</p>
+                    </div>
+                </div>
+            </a>
+
     </div>
 
     <!-- Pending Listings -->

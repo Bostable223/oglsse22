@@ -94,4 +94,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/packages/{id}', [AdminController::class, 'updatePackage'])->name('packages.update');
     Route::delete('/packages/{id}', [AdminController::class, 'deletePackage'])->name('packages.delete');
     Route::post('/packages/{id}/toggle-active', [AdminController::class, 'togglePackageActive'])->name('packages.toggle-active');
+
+    // Package analytics
+    Route::get('/packages/analytics', [AdminController::class, 'packageAnalytics'])->name('packages.analytics');
 });
