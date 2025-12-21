@@ -38,6 +38,10 @@ Route::middleware('auth')->group(function () {
     
     // Delete single image from listing
     Route::delete('/listings/{slug}/images/{image}', [ListingController::class, 'deleteImage'])->name('listings.images.delete');
+
+    // Promote/Upgrade Listing
+    Route::get('/listings/{listing}/promote', [PackageController::class, 'showPromoteOptions'])->name('listings.promote');
+    Route::post('/listings/{listing}/apply-promotion', [PackageController::class, 'applyPromotion'])->name('listings.apply-promotion');
     
     // Favorite functionality
     Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])

@@ -106,4 +106,110 @@ class PackageController extends Controller
             ->route('dashboard.my-listings')
             ->with('success', 'Oglas je poslat na odobrenje!');
     }
+
+
+    /**
+     * Show promotion/upgrade options for a listing
+     * 
+     * Route: GET /listings/{listing}/promote
+     */
+    public function showPromoteOptions($listingId)
+    {
+        $listing = Listing::with('package')->findOrFail($listingId);
+
+        // Check if user owns this listing
+        if (Auth::id() !== $listing->user_id) {
+            abort(403, 'Nemate dozvolu da pristupite ovom oglasu.');
+        }
+
+        // Get current package value (for comparison)
+        $currentPackageValue = 0;
+        if ($listing->package_id) {
+            $currentPackageValue = $this->calculatePackageValue($listing->package);
+        }
+
+        // Get all active packages
+        $allPackages = Package::where('is_active', true)->orderBy('type')->orderBy('order')->get();
+
+        // Filter packages to show only upgrades
+        $topPackages = $allPackages->where('type', 'top')->filter(function($package) use ($currentPackageValue) {
+            return $this->calculatePackageValue($package) > $currentPackageValue;
+        });
+
+        $featuredPackages = $allPackages->where('type', 'featured')->filter(function($package) use ($currentPackageValue) {
+            return $this->calculatePackageValue($package) > $currentPackageValue;
+        });
+
+        return view('listings.promote', compact('listing', 'topPackages', 'featuredPackages'));
+    }
+
+    /**
+     * Apply promotion/upgrade to listing
+     * 
+     * Route: POST /listings/{listing}/apply-promotion
+     */
+    public function applyPromotion(Request $request, $listingId)
+    {
+        $validated = $request->validate([
+            'package_id' => 'required|exists:packages,id',
+        ]);
+
+        $listing = Listing::findOrFail($listingId);
+
+        // Check if user owns this listing
+        if (Auth::id() !== $listing->user_id) {
+            abort(403);
+        }
+
+        $newPackage = Package::findOrFail($validated['package_id']);
+
+        // Verify it's actually an upgrade
+        $currentValue = $listing->package_id ? $this->calculatePackageValue($listing->package) : 0;
+        $newValue = $this->calculatePackageValue($newPackage);
+
+        if ($newValue <= $currentValue) {
+            return back()->withErrors('Možete samo nadograditi na viši paket!');
+        }
+
+        // Calculate expiration date
+        $expiresAt = now()->addDays($newPackage->duration_days);
+
+        // Update listing with new package
+        $updateData = [
+            'package_id' => $newPackage->id,
+            'promoted_at' => now(),
+        ];
+
+        if ($newPackage->type === 'top') {
+            $updateData['is_top'] = true;
+            $updateData['top_until'] = $expiresAt;
+        } elseif ($newPackage->type === 'featured') {
+            $updateData['is_featured'] = true;
+            $updateData['featured_until'] = $expiresAt;
+        }
+
+        $listing->update($updateData);
+
+        // In a real application, redirect to payment here
+        // For now, we'll just activate it
+        
+        return redirect()
+            ->route('dashboard.my-listings')
+            ->with('success', 'Oglas je uspešno nadograđen! Paket: ' . $newPackage->name);
+    }
+
+    /**
+     * Calculate package value for comparison
+     * Higher value = better package
+     */
+    private function calculatePackageValue($package)
+    {
+        if (!$package) return 0;
+        
+        // Featured packages are worth more than top packages
+        $typeMultiplier = $package->type === 'featured' ? 2 : 1;
+        
+        // Calculate value: (price * duration * type multiplier)
+        return $package->price * $package->duration_days * $typeMultiplier;
+    }
 }

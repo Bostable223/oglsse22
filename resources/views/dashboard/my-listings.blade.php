@@ -67,8 +67,12 @@
                         </div>
 
                         @if($listing->isFeaturedActive())
-                            <div class="absolute top-2 left-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                <i class="fas fa-star"></i> Istaknuto
+                            <div class="absolute top-12 left-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-star"></i> Featured
+                            </div>
+                            @elseif($listing->isTopActive())
+                            <div class="absolute top-12 left-2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                <i class="fas fa-arrow-up"></i> Top
                             </div>
                         @endif
                     </div>
@@ -102,30 +106,41 @@
                             <span><i class="fas fa-clock"></i> {{ $listing->created_at->diffForHumans() }}</span>
                         </div>
 
-                        <!-- Actions -->
+                       <!-- Actions -->
+                    <div class="flex flex-col gap-2">
                         <div class="grid grid-cols-3 gap-2">
                             <a href="{{ route('listings.show', $listing->slug) }}" 
-                               class="text-center px-3 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 text-sm font-semibold">
-                                <i class="fas fa-eye"></i> Vidi
+                            class="text-center px-3 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 text-sm font-semibold">
+                                <i class="fas fa-eye"></i>
                             </a>
                             <a href="{{ route('listings.edit', $listing->slug) }}" 
-                               class="text-center px-3 py-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 text-sm font-semibold">
-                                <i class="fas fa-edit"></i> Izmeni
+                            class="text-center px-3 py-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 text-sm font-semibold">
+                                <i class="fas fa-edit"></i>
                             </a>
                             <form action="{{ route('listings.destroy', $listing->slug) }}" method="POST" 
-                                  onsubmit="return confirm('Da li ste sigurni?')" class="inline-block">
+                                onsubmit="return confirm('Da li ste sigurni?')" class="inline-block">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 
                                         class="w-full px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm font-semibold">
-                                    <i class="fas fa-trash"></i> Obriši
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </form>
                         </div>
+                        
+                        <!-- Promote Button -->
+                        @if($listing->status === 'active')
+                            <a href="{{ route('listings.promote', $listing->id) }}" 
+                            class="w-full text-center px-3 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 text-sm font-bold shadow-md">
+                                <i class="fas fa-rocket mr-1"></i> 
+                                @if($listing->package_id)
+                                    Nadogradi
+                                @else
+                                    Promoviši
+                                @endif
+                            </a>
+                        @endif
                     </div>
-                </div>
-            @endforeach
-        </div>
 
         <!-- Pagination -->
         <div class="mt-8">
