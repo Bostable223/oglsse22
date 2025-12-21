@@ -407,4 +407,53 @@ public function deletePackage($id)
 
     return back()->with('success', 'Paket je obrisan!');
 }
+
+/**
+ * Show edit user form
+ * 
+ * Route: GET /admin/users/{id}/edit
+ */
+public function editUser($id)
+{
+    $user = User::withCount('listings')->findOrFail($id);
+    
+    // Can't edit admin users (security)
+    if ($user->isAdmin()) {
+        return back()->withErrors('Ne možete izmeniti administratorski nalog!');
+    }
+    
+    return view('admin.users-edit', compact('user'));
+}
+
+/**
+ * Update user information
+ * 
+ * Route: PUT /admin/users/{id}
+ */
+public function updateUser(Request $request, $id)
+{
+    $user = User::findOrFail($id);
+    
+    // Can't edit admin users
+    if ($user->isAdmin()) {
+        return back()->withErrors('Ne možete izmeniti administratorski nalog!');
+    }
+    
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email,' . $id,
+        'phone' => 'nullable|string|max:50',
+        'city' => 'nullable|string|max:100',
+        'bio' => 'nullable|string|max:500',
+        'is_verified' => 'boolean',
+        'is_active' => 'boolean',
+    ]);
+    
+    $user->update($validated);
+    
+    return redirect()
+        ->route('admin.users')
+        ->with('success', 'Korisnik je uspešno ažuriran!');
+}
+
 }

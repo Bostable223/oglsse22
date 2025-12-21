@@ -103,31 +103,39 @@
                             {{ $user->created_at->format('d.m.Y') }}
                         </td>
                         <td class="px-4 py-4">
-                            <div class="flex items-center gap-2">
-                                @if(!$user->isAdmin())
-                                    <!-- Toggle Active Status -->
-                                    <form action="{{ route('admin.users.toggle-active', $user->id) }}" method="POST" class="inline-block">
-                                        @csrf
-                                        <button type="submit" class="{{ $user->is_active ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700' }}" 
-                                                title="{{ $user->is_active ? 'Deaktiviraj' : 'Aktiviraj' }}">
-                                            <i class="fas fa-{{ $user->is_active ? 'ban' : 'check' }}"></i>
-                                        </button>
-                                    </form>
+    <div class="flex items-center gap-2">
+        @if(!$user->isAdmin())
+            <!-- Edit -->
+            <a href="{{ route('admin.users.edit', $user->id) }}" 
+               class="text-blue-600 hover:text-blue-700" 
+               title="Izmeni">
+                <i class="fas fa-edit"></i>
+            </a>
 
-                                    <!-- Delete User -->
-                                    <form action="{{ route('admin.users.delete', $user->id) }}" method="POST" class="inline-block" 
-                                          onsubmit="return confirm('Da li ste sigurni da želite obrisati ovog korisnika?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-700" title="Obriši">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-gray-400 text-xs">Admin</span>
-                                @endif
-                            </div>
-                        </td>
+            <!-- Toggle Active Status -->
+            <form action="{{ route('admin.users.toggle-active', $user->id) }}" method="POST" class="inline-block">
+                @csrf
+                <button type="submit" 
+                        class="{{ $user->is_active ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700' }}" 
+                        title="{{ $user->is_active ? 'Deaktiviraj' : 'Aktiviraj' }}">
+                    <i class="fas fa-{{ $user->is_active ? 'ban' : 'check' }}"></i>
+                </button>
+            </form>
+
+            <!-- Delete User -->
+            <form action="{{ route('admin.users.delete', $user->id) }}" method="POST" class="inline-block" 
+                  onsubmit="return confirm('Da li ste sigurni da želite obrisati ovog korisnika?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-red-600 hover:text-red-700" title="Obriši">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </form>
+        @else
+            <span class="text-gray-400 text-xs">Admin</span>
+        @endif
+    </div>
+</td>
                     </tr>
                     @endforeach
                 </tbody>

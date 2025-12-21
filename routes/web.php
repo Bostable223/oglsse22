@@ -40,8 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/listings/{slug}/images/{image}', [ListingController::class, 'deleteImage'])->name('listings.images.delete');
 
     // Promote/Upgrade Listing
-    Route::get('/listings/{listing}/promote', [PackageController::class, 'showPromoteOptions'])->name('listings.promote');
-    Route::post('/listings/{listing}/apply-promotion', [PackageController::class, 'applyPromotion'])->name('listings.apply-promotion');
+    Route::get('/listings/{listing}/promote', [\App\Http\Controllers\PackageController::class, 'showPromoteOptions'])->name('listings.promote');
+    Route::post('/listings/{listing}/apply-promotion', [\App\Http\Controllers\PackageController::class, 'applyPromotion'])->name('listings.apply-promotion');
     
     // Favorite functionality
     Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])
@@ -75,8 +75,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/listings/{id}/toggle-featured', [AdminController::class, 'toggleFeatured'])->name('listings.toggle-featured');
     Route::delete('/listings/{id}', [AdminController::class, 'deleteListing'])->name('listings.delete');
     
-    // Manage Users
+    // Users management
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('users.edit'); // ADD THIS
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('users.update'); // ADD THIS
     Route::post('/users/{id}/toggle-active', [AdminController::class, 'toggleUserActive'])->name('users.toggle-active');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete');
     
