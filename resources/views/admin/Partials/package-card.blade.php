@@ -77,7 +77,18 @@
         <!-- Actions -->
         <div class="grid grid-cols-3 gap-2">
             <!-- Edit -->
-            <button onclick='editPackage(@json($package))' 
+            <button type="button"
+                    data-package-id="{{ $package->id }}"
+                    data-package-name="{{ $package->name }}"
+                    data-package-description="{{ $package->description }}"
+                    data-package-type="{{ $package->type }}"
+                    data-package-duration="{{ $package->duration_days }}"
+                    data-package-price="{{ $package->price }}"
+                    data-package-currency="{{ $package->currency }}"
+                    data-package-order="{{ $package->order }}"
+                    data-package-active="{{ $package->is_active ? '1' : '0' }}"
+                    data-package-features="{{ json_encode($package->features ?? []) }}"
+                    onclick="editPackageFromData(this)"
                     class="px-3 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 text-sm font-semibold">
                 <i class="fas fa-edit"></i>
             </button>

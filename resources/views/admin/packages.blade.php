@@ -309,29 +309,40 @@ function addEditFeatureField() {
     container.appendChild(div);
 }
 
-// Edit package function
-function editPackage(packageData) {
-    const data = JSON.parse(packageData);
+// Edit package function using data attributes
+function editPackageFromData(button) {
+    const id = button.dataset.packageId;
+    const name = button.dataset.packageName;
+    const description = button.dataset.packageDescription;
+    const type = button.dataset.packageType;
+    const duration = button.dataset.packageDuration;
+    const price = button.dataset.packagePrice;
+    const currency = button.dataset.packageCurrency;
+    const order = button.dataset.packageOrder;
+    const isActive = button.dataset.packageActive === '1';
+    const features = JSON.parse(button.dataset.packageFeatures || '[]');
     
-    document.getElementById('edit_name').value = data.name;
-    document.getElementById('edit_type').value = data.type;
-    document.getElementById('edit_duration').value = data.duration_days;
-    document.getElementById('edit_price').value = data.price;
-    document.getElementById('edit_currency').value = data.currency;
-    document.getElementById('edit_order').value = data.order || 0;
-    document.getElementById('edit_description').value = data.description || '';
-    document.getElementById('edit_is_active').checked = data.is_active;
+    // Populate form fields
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_type').value = type;
+    document.getElementById('edit_duration').value = duration;
+    document.getElementById('edit_price').value = price;
+    document.getElementById('edit_currency').value = currency;
+    document.getElementById('edit_order').value = order || 0;
+    document.getElementById('edit_description').value = description || '';
+    document.getElementById('edit_is_active').checked = isActive;
     
     // Populate features
     const container = document.getElementById('editFeaturesContainer');
     container.innerHTML = '';
     
-    if (data.features && data.features.length > 0) {
-        data.features.forEach(feature => {
+    if (features && features.length > 0) {
+        features.forEach(feature => {
             const div = document.createElement('div');
             div.className = 'flex gap-2 mb-2';
+            const safeFeature = feature.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             div.innerHTML = `
-                <input type="text" name="features[]" value="${feature}"
+                <input type="text" name="features[]" value="${safeFeature}"
                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 <button type="button" onclick="this.parentElement.remove()" 
                         class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
@@ -342,7 +353,8 @@ function editPackage(packageData) {
         });
     }
     
-    document.getElementById('editPackageForm').action = `/admin/packages/${data.id}`;
+    // Set form action and show modal
+    document.getElementById('editPackageForm').action = `/admin/packages/${id}`;
     document.getElementById('editPackageModal').classList.remove('hidden');
 }
 
