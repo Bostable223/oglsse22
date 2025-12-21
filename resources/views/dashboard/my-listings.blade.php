@@ -70,7 +70,7 @@
                             <div class="absolute top-12 left-2 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                                 <i class="fas fa-star"></i> Featured
                             </div>
-                            @elseif($listing->isTopActive())
+                        @elseif($listing->isTopActive())
                             <div class="absolute top-12 left-2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                                 <i class="fas fa-arrow-up"></i> Top
                             </div>
@@ -141,12 +141,15 @@
                             </a>
                         @endif
                     </div>
+    </div>
+</div>
+@endforeach
 
         <!-- Pagination -->
         <div class="mt-8">
             {{ $listings->links() }}
         </div>
-    @else
+        @else
         <div class="bg-white rounded-lg shadow-sm p-12 text-center">
             <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
             <h3 class="text-xl font-semibold text-gray-700 mb-2">Nemate oglase
