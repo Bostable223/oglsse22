@@ -54,14 +54,8 @@ class ListingController extends Controller
 
         // Get all unique locations (city, municipality, address parts) for autocomplete
         $allLocations = Listing::where('status', 'active')
-            ->select('city', 'municipality')
-            ->get()
-            ->flatMap(function($listing) {
-                $locations = [];
-                if ($listing->city) $locations[] = $listing->city;
-                if ($listing->municipality) $locations[] = $listing->city . ', ' . $listing->municipality;
-                return $locations;
-            })
+    ->distinct()
+    ->get(['city', 'municipality'])
             ->unique()
             ->sort()
             ->values();
