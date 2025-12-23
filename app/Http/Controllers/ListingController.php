@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Listing;
+use App\Models\Package;
+use App\Models\User;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -48,7 +50,7 @@ class ListingController extends Controller
         // Get statistics for hero
         $stats = [
             'total_listings' => Listing::where('status', 'active')->count(),
-            'active_users' => \App\Models\User::where('role', 'user')->count(),
+            'active_users' => User::where('role', 'user')->count(),
             'cities' => Listing::where('status', 'active')->distinct('city')->count('city'),
         ];
 
@@ -285,12 +287,12 @@ return redirect()->route('listings.select-package');
         }
 
         // Get all active packages, grouped by type
-        $topPackages = \App\Models\Package::where('is_active', true)
+        $topPackages = Package::where('is_active', true)
                                           ->where('type', 'top')
                                           ->orderBy('duration_days')
                                           ->get();
 
-        $featuredPackages = \App\Models\Package::where('is_active', true)
+        $featuredPackages = Package::where('is_active', true)
                                                 ->where('type', 'featured')
                                                 ->orderBy('duration_days')
                                                 ->get();
@@ -321,7 +323,7 @@ return redirect()->route('listings.select-package');
 
         // Handle package selection
         if ($request->filled('package_id')) {
-            $package = \App\Models\Package::findOrFail($request->package_id);
+            $package = Package::findOrFail($request->package_id);
             $listingData['package_id'] = $package->id;
             
             // Set promotion dates based on package type
