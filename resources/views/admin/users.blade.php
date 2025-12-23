@@ -102,7 +102,7 @@
                         <td class="px-4 py-4 text-sm text-gray-600">
                             {{ $user->created_at->format('d.m.Y') }}
                         </td>
-                        <td class="px-4 py-4">
+                       <td class="px-4 py-4">
     <div class="flex items-center gap-2">
         @if(!$user->isAdmin())
             <!-- Edit -->
@@ -111,6 +111,17 @@
                title="Izmeni">
                 <i class="fas fa-edit"></i>
             </a>
+
+            <!-- Reset Password -->
+            <form action="{{ route('admin.users.reset-password', $user->id) }}" method="POST" class="inline-block"
+                  onsubmit="return confirm('Da li ste sigurni da želite resetovati lozinku za {{ $user->name }}?')">
+                @csrf
+                <button type="submit" 
+                        class="text-purple-600 hover:text-purple-700" 
+                        title="Resetuj lozinku">
+                    <i class="fas fa-key"></i>
+                </button>
+            </form>
 
             <!-- Toggle Active Status -->
             <form action="{{ route('admin.users.toggle-active', $user->id) }}" method="POST" class="inline-block">

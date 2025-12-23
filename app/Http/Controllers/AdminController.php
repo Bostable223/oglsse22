@@ -220,6 +220,47 @@ class AdminController extends Controller
     }
 
     /**
+ * Reset user password
+ * 
+ * Route: POST /admin/users/{id}/reset-password
+ */
+public function resetUserPassword($id)
+{
+    $user = User::findOrFail($id);
+    
+    // Can't reset admin passwords (security measure)
+    if ($user->isAdmin()) {
+        return back()->withErrors('Ne možete resetovati administratorsku lozinku!');
+    }
+    
+    // Generate a random secure password
+    $newPassword = \Str::random(12);
+    
+    // Update user password
+    $user->update([
+        'password' => \Hash::make($newPassword),
+    ]);
+    
+    // Try to send email notification
+    try {
+        // Send email to user with new password
+        \Mail::to($user->email)->send(new \App\Mail\PasswordResetByAdmin($user, $newPassword));
+        
+        return back()->with('success', 
+            "Lozinka je resetovana i poslata korisniku na email: {$user->email}"
+        );
+    } catch (\Exception $e) {
+        // If email fails, show password to admin
+        \Log::error('Failed to send password reset email: ' . $e->getMessage());
+        
+        return back()->with('success', 
+            "Lozinka je resetovana! Nova lozinka: <strong>{$newPassword}</strong><br>
+            <small class='text-gray-600'>Email nije mogao biti poslan. Molimo kopiraćte lozinku i pošaljite korisniku ručno.</small>"
+        );
+    }
+}
+
+    /**
      * Show all categories
      * 
      * Route: GET /admin/categories
@@ -630,5 +671,7 @@ public function packageAnalytics(Request $request)
         return back()->withErrors('Greška pri učitavanju analitike: ' . $e->getMessage());
     }
 }
+
+
 
 }

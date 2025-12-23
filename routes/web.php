@@ -81,6 +81,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('users.update'); // ADD THIS
     Route::post('/users/{id}/toggle-active', [AdminController::class, 'toggleUserActive'])->name('users.toggle-active');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete');
+
+    // User password reset
+    Route::post('/users/{id}/reset-password', [AdminController::class, 'resetUserPassword'])->name('users.reset-password');
     
     
     // Manage Categories
