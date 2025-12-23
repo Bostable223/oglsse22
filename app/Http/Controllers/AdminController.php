@@ -593,26 +593,32 @@ public function packageAnalytics(Request $request)
                                   ->get();
 
         // Calculate number of months/days to show in trend
+        // 1. Calculate number of days to determine grouping
         $daysDiff = $startDate->diffInDays($endDate);
-        
-        // Monthly trend (based on date range)
+
+        // 2. OPTIMIZATION: Fetch ALL data in ONE query (Fixes N+1)
+        // We eager load 'package' so we don't run a query for every single price calculation
+        $allPeriodListings = Listing::whereNotNull('package_id')
+                                  ->whereNotNull('promoted_at')
+                                  ->whereBetween('promoted_at', [$startDate, $endDate])
+                                  ->with('package') 
+                                  ->get();
+
         $monthlyTrend = [];
-        
+
         if ($daysDiff <= 31) {
-            // Daily trend for ranges up to 31 days
+            // Group by day in memory using the collection
+            $groupedByDay = $allPeriodListings->groupBy(function($item) {
+                return $item->promoted_at->format('Y-m-d');
+            });
+
             for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
-                $dayListings = Listing::whereNotNull('package_id')
-                                     ->whereNotNull('promoted_at')
-                                     ->whereDate('promoted_at', $date)
-                                     ->with('package')
-                                     ->get();
+                $dateKey = $date->format('Y-m-d');
+                $dayListings = $groupedByDay->get($dateKey, collect());
                 
-                $revenue = 0;
-                foreach ($dayListings as $listing) {
-                    if ($listing->package) {
-                        $revenue += $listing->package->price;
-                    }
-                }
+                $revenue = $dayListings->sum(function($listing) {
+                    return $listing->package ? $listing->package->price : 0;
+                });
                 
                 $monthlyTrend[] = [
                     'month' => $date->format('d M'),
@@ -621,33 +627,27 @@ public function packageAnalytics(Request $request)
                 ];
             }
         } else {
-            // Monthly trend for ranges longer than 31 days
+            // Group by month in memory using the collection
+            $groupedByMonth = $allPeriodListings->groupBy(function($item) {
+                return $item->promoted_at->format('Y-m');
+            });
+
             $currentDate = $startDate->copy()->startOfMonth();
             $endDateMonth = $endDate->copy()->endOfMonth();
             
             while ($currentDate <= $endDateMonth) {
-                $monthStart = max($currentDate->copy()->startOfMonth(), $startDate);
-                $monthEnd = min($currentDate->copy()->endOfMonth(), $endDate);
+                $monthKey = $currentDate->format('Y-m');
+                $monthListings = $groupedByMonth->get($monthKey, collect());
                 
-                $monthListings = Listing::whereNotNull('package_id')
-                                       ->whereNotNull('promoted_at')
-                                       ->whereBetween('promoted_at', [$monthStart, $monthEnd])
-                                       ->with('package')
-                                       ->get();
-                
-                $revenue = 0;
-                foreach ($monthListings as $listing) {
-                    if ($listing->package) {
-                        $revenue += $listing->package->price;
-                    }
-                }
+                $revenue = $monthListings->sum(function($listing) {
+                    return $listing->package ? $listing->package->price : 0;
+                });
                 
                 $monthlyTrend[] = [
                     'month' => $currentDate->format('M Y'),
                     'count' => $monthListings->count(),
                     'revenue' => $revenue,
                 ];
-                
                 $currentDate->addMonth();
             }
         }

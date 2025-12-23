@@ -16,6 +16,8 @@ return new class extends Migration
             $table->boolean('is_top')->default(false)->after('is_featured'); // Top listing (appears first)
             $table->timestamp('top_until')->nullable()->after('is_top'); // When top promotion expires
             $table->timestamp('promoted_at')->nullable()->after('published_at'); // When promotion started
+            // Add this to the 'up' method schema closure
+            $table->index(['promoted_at', 'package_id']);
         });
     }
 
