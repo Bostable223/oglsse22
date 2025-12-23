@@ -82,6 +82,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{id}/toggle-active', [AdminController::class, 'toggleUserActive'])->name('users.toggle-active');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete');
     
+    
     // Manage Categories
     Route::get('/categories', [AdminController::class, 'categories'])->name('categories');
     Route::post('/categories', [AdminController::class, 'storeCategory'])->name('categories.store');

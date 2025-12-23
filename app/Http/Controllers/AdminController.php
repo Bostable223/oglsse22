@@ -461,97 +461,174 @@ public function updateUser(Request $request, $id)
  * 
  * Route: GET /admin/packages/analytics
  */
-public function packageAnalytics()
+public function packageAnalytics(Request $request)
 {
-    // Get all packages with usage statistics
-    $packages = Package::withCount('listings')
-                       ->orderBy('type')
-                       ->orderBy('order')
-                       ->get();
+    try {
+        // Get date range from request or default to last 30 days
+        $startDate = $request->input('start_date', now()->subDays(30)->startOfDay());
+        $endDate = $request->input('end_date', now()->endOfDay());
+        
+        // Convert to Carbon instances if they're strings
+        if (is_string($startDate)) {
+            $startDate = \Carbon\Carbon::parse($startDate)->startOfDay();
+        }
+        if (is_string($endDate)) {
+            $endDate = \Carbon\Carbon::parse($endDate)->endOfDay();
+        }
 
-    // Active promotions count
-    $activePromotions = [
-        'top' => Listing::where('is_top', true)
-                       ->where(function($q) {
-                           $q->whereNull('top_until')
-                             ->orWhere('top_until', '>', now());
-                       })
-                       ->count(),
-        'featured' => Listing::where('is_featured', true)
-                            ->where(function($q) {
-                                $q->whereNull('featured_until')
-                                  ->orWhere('featured_until', '>', now());
-                            })
-                            ->count(),
-    ];
+        // Get all packages with usage statistics (filtered by date range)
+        $packages = Package::withCount(['listings' => function($query) use ($startDate, $endDate) {
+            $query->whereNotNull('promoted_at')
+                  ->whereBetween('promoted_at', [$startDate, $endDate]);
+        }])->orderBy('type')->orderBy('order')->get();
 
-    // Revenue by package (assuming all are paid)
-    $revenueByPackage = Package::withCount('listings')
-                               ->get()
-                               ->map(function($package) {
-                                   return [
-                                       'package_name' => $package->name,
-                                       'total_revenue' => $package->price * $package->listings_count,
-                                       'usage_count' => $package->listings_count,
-                                   ];
-                               });
-
-    // Total revenue
-    $totalRevenue = $revenueByPackage->sum('total_revenue');
-    $totalSales = $revenueByPackage->sum('usage_count');
-
-    // Package usage by type
-    $usageByType = [
-        'top' => Package::where('type', 'top')->withCount('listings')->get()->sum('listings_count'),
-        'featured' => Package::where('type', 'featured')->withCount('listings')->get()->sum('listings_count'),
-        'free' => Listing::whereNull('package_id')->count(),
-    ];
-
-    // Most popular packages (top 5)
-    $popularPackages = Package::withCount('listings')
-                              ->orderBy('listings_count', 'desc')
-                              ->limit(5)
-                              ->get();
-
-    // Recent package purchases (last 10)
-    $recentPurchases = Listing::whereNotNull('package_id')
-                              ->with(['package', 'user'])
-                              ->latest('promoted_at')
-                              ->limit(10)
-                              ->get();
-
-    // Monthly trend (last 6 months)
-    $monthlyTrend = [];
-    for ($i = 5; $i >= 0; $i--) {
-        $date = now()->subMonths($i);
-        $monthlyTrend[] = [
-            'month' => $date->format('M Y'),
-            'count' => Listing::whereNotNull('package_id')
-                             ->whereYear('promoted_at', $date->year)
-                             ->whereMonth('promoted_at', $date->month)
-                             ->count(),
-            'revenue' => Listing::whereNotNull('package_id')
-                               ->whereYear('promoted_at', $date->year)
-                               ->whereMonth('promoted_at', $date->month)
-                               ->with('package')
-                               ->get()
-                               ->sum(function($listing) {
-                                   return $listing->package ? $listing->package->price : 0;
-                               }),
+        // Active promotions count (current, not filtered by date range)
+        $activePromotions = [
+            'top' => Listing::where('is_top', true)
+                           ->where(function($q) {
+                               $q->whereNull('top_until')
+                                 ->orWhere('top_until', '>', now());
+                           })
+                           ->count(),
+            'featured' => Listing::where('is_featured', true)
+                                ->where(function($q) {
+                                    $q->whereNull('featured_until')
+                                      ->orWhere('featured_until', '>', now());
+                                })
+                                ->count(),
         ];
-    }
 
-    return view('admin.package-analytics', compact(
-        'packages',
-        'activePromotions',
-        'revenueByPackage',
-        'totalRevenue',
-        'totalSales',
-        'usageByType',
-        'popularPackages',
-        'recentPurchases',
-        'monthlyTrend'
-    ));
+        // Revenue by package (filtered by date range)
+        $revenueByPackage = collect();
+        foreach ($packages as $package) {
+            $revenueByPackage->push([
+                'package_name' => $package->name,
+                'total_revenue' => $package->price * $package->listings_count,
+                'usage_count' => $package->listings_count,
+            ]);
+        }
+
+        // Total revenue and sales (filtered)
+        $totalRevenue = $revenueByPackage->sum('total_revenue');
+        $totalSales = $revenueByPackage->sum('usage_count');
+
+        // Package usage by type (filtered by date range)
+        $usageByType = [
+            'top' => Package::where('type', 'top')
+                           ->withCount(['listings' => function($query) use ($startDate, $endDate) {
+                               $query->whereNotNull('promoted_at')
+                                     ->whereBetween('promoted_at', [$startDate, $endDate]);
+                           }])
+                           ->get()
+                           ->sum('listings_count'),
+            'featured' => Package::where('type', 'featured')
+                                ->withCount(['listings' => function($query) use ($startDate, $endDate) {
+                                    $query->whereNotNull('promoted_at')
+                                          ->whereBetween('promoted_at', [$startDate, $endDate]);
+                                }])
+                                ->get()
+                                ->sum('listings_count'),
+            'free' => Listing::whereNull('package_id')
+                            ->whereBetween('created_at', [$startDate, $endDate])
+                            ->count(),
+        ];
+
+        // Most popular packages (top 5, filtered by date range)
+        $popularPackages = Package::withCount(['listings' => function($query) use ($startDate, $endDate) {
+            $query->whereNotNull('promoted_at')
+                  ->whereBetween('promoted_at', [$startDate, $endDate]);
+        }])
+        ->orderBy('listings_count', 'desc')
+        ->limit(5)
+        ->get();
+
+        // Recent package purchases (last 10, within date range)
+        $recentPurchases = Listing::whereNotNull('package_id')
+                                  ->whereNotNull('promoted_at')
+                                  ->whereBetween('promoted_at', [$startDate, $endDate])
+                                  ->with(['package', 'user'])
+                                  ->orderBy('promoted_at', 'desc')
+                                  ->limit(10)
+                                  ->get();
+
+        // Calculate number of months/days to show in trend
+        $daysDiff = $startDate->diffInDays($endDate);
+        
+        // Monthly trend (based on date range)
+        $monthlyTrend = [];
+        
+        if ($daysDiff <= 31) {
+            // Daily trend for ranges up to 31 days
+            for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
+                $dayListings = Listing::whereNotNull('package_id')
+                                     ->whereNotNull('promoted_at')
+                                     ->whereDate('promoted_at', $date)
+                                     ->with('package')
+                                     ->get();
+                
+                $revenue = 0;
+                foreach ($dayListings as $listing) {
+                    if ($listing->package) {
+                        $revenue += $listing->package->price;
+                    }
+                }
+                
+                $monthlyTrend[] = [
+                    'month' => $date->format('d M'),
+                    'count' => $dayListings->count(),
+                    'revenue' => $revenue,
+                ];
+            }
+        } else {
+            // Monthly trend for ranges longer than 31 days
+            $currentDate = $startDate->copy()->startOfMonth();
+            $endDateMonth = $endDate->copy()->endOfMonth();
+            
+            while ($currentDate <= $endDateMonth) {
+                $monthStart = max($currentDate->copy()->startOfMonth(), $startDate);
+                $monthEnd = min($currentDate->copy()->endOfMonth(), $endDate);
+                
+                $monthListings = Listing::whereNotNull('package_id')
+                                       ->whereNotNull('promoted_at')
+                                       ->whereBetween('promoted_at', [$monthStart, $monthEnd])
+                                       ->with('package')
+                                       ->get();
+                
+                $revenue = 0;
+                foreach ($monthListings as $listing) {
+                    if ($listing->package) {
+                        $revenue += $listing->package->price;
+                    }
+                }
+                
+                $monthlyTrend[] = [
+                    'month' => $currentDate->format('M Y'),
+                    'count' => $monthListings->count(),
+                    'revenue' => $revenue,
+                ];
+                
+                $currentDate->addMonth();
+            }
+        }
+
+        return view('admin.package-analytics', compact(
+            'packages',
+            'activePromotions',
+            'revenueByPackage',
+            'totalRevenue',
+            'totalSales',
+            'usageByType',
+            'popularPackages',
+            'recentPurchases',
+            'monthlyTrend',
+            'startDate',
+            'endDate'
+        ));
+        
+    } catch (\Exception $e) {
+        \Log::error('Package Analytics Error: ' . $e->getMessage());
+        return back()->withErrors('Greška pri učitavanju analitike: ' . $e->getMessage());
+    }
 }
 
 }
