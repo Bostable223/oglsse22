@@ -35,9 +35,9 @@
                         </a>
 
                             <!-- ADD THIS: Notification Bell -->
-                            @auth
+                            
                                 <x-notification-bell />
-                            @endauth
+                            
 
                         <!-- User Dropdown -->
                         <div class="relative" x-data="{ open: false }">
