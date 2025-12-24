@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\ListingController;
+use App\Http\Controllers\PackageController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,12 +42,33 @@ Route::middleware('auth')->group(function () {
     Route::delete('/listings/{slug}/images/{image}', [ListingController::class, 'deleteImage'])->name('listings.images.delete');
 
     // Promote/Upgrade Listing
-    Route::get('/listings/{listing}/promote', [\App\Http\Controllers\PackageController::class, 'showPromoteOptions'])->name('listings.promote');
-    Route::post('/listings/{listing}/apply-promotion', [\App\Http\Controllers\PackageController::class, 'applyPromotion'])->name('listings.apply-promotion');
+    Route::get('/listings/{listing}/promote', [PackageController::class, 'showPromoteOptions'])->name('listings.promote');
+    Route::post('/listings/{listing}/apply-promotion', [PackageController::class, 'applyPromotion'])->name('listings.apply-promotion');
+
+    // Notification routes (requires auth)
+    Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
+});
     
     // Favorite functionality
     Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])
          ->name('listings.favorite');
+
+         
+});
+
+// API route for notification bell
+Route::middleware('auth')->get('/api/notifications/recent', function() {
+    $user = Auth::user();
+    $notifications = $user->notifications()->recent(7)->limit(10)->get();
+    
+    return response()->json([
+        'notifications' => $notifications,
+        'unread_count' => $user->unreadNotificationsCount(),
+    ]);
 });
 
 // Public listing detail - MUST come AFTER /listings/create

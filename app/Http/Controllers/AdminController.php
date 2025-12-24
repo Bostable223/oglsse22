@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Category;
 use App\Models\Package;
 use Illuminate\Http\Request;
+use App\Services\NotificationService;
 
 class AdminController extends Controller
 {
@@ -81,22 +82,33 @@ class AdminController extends Controller
         return view('admin.listings', compact('listings', 'categories'));
     }
 
+    // Add to constructor or use dependency injection
+        protected NotificationService $notificationService;
+
+        public function __construct(NotificationService $notificationService)
+        {
+            $this->notificationService = $notificationService;
+        }
+
     /**
      * Approve a pending listing
      * 
      * Route: POST /admin/listings/{id}/approve
      */
     public function approveListing($id)
-    {
-        $listing = Listing::findOrFail($id);
-        
-        $listing->update([
-            'status' => 'active',
-            'published_at' => now(),
-        ]);
+{
+    $listing = Listing::findOrFail($id);
+    
+    $listing->update([
+        'status' => 'active',
+        'published_at' => now(),
+    ]);
 
-        return back()->with('success', 'Oglas je odobren!');
-    }
+    // Send notification
+    $this->notificationService->listingApproved($listing);
+
+    return back()->with('success', 'Oglas je odobren i korisnik je obavešten!');
+}
 
     /**
      * Reject a listing
@@ -104,17 +116,19 @@ class AdminController extends Controller
      * Route: POST /admin/listings/{id}/reject
      */
     public function rejectListing(Request $request, $id)
-    {
-        $listing = Listing::findOrFail($id);
-        
-        $listing->update([
-            'status' => 'rejected',
-        ]);
+{
+    $listing = Listing::findOrFail($id);
+    
+    $listing->update([
+        'status' => 'rejected',
+    ]);
 
-        // You could send notification to user here
+    // Send notification with optional reason
+    $reason = $request->input('reason');
+    $this->notificationService->listingRejected($listing, $reason);
 
-        return back()->with('success', 'Oglas je odbijen!');
-    }
+    return back()->with('success', 'Oglas je odbijen i korisnik je obavešten!');
+}
 
     /**
      * Toggle featured status
@@ -671,7 +685,5 @@ public function packageAnalytics(Request $request)
         return back()->withErrors('Greška pri učitavanju analitike: ' . $e->getMessage());
     }
 }
-
-
 
 }

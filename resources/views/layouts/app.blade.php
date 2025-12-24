@@ -34,6 +34,11 @@
                             <i class="fas fa-plus mr-2"></i> Postavi oglas
                         </a>
 
+                            <!-- ADD THIS: Notification Bell -->
+                            @auth
+                                <x-notification-bell />
+                            @endauth
+
                         <!-- User Dropdown -->
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
@@ -48,6 +53,7 @@
                                 <a href="{{ route('dashboard.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                                 </a>
+                                
                                 <a href="{{ route('dashboard.my-listings') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-list mr-2"></i> Moji oglasi
                                 </a>
