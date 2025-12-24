@@ -17,61 +17,12 @@
         <!-- Main Content -->
         <div class="lg:col-span-2">
             
-            <!-- Image Gallery Slider -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-                @if($listing->images->count() > 0)
-                    <!-- Main Image Slider -->
-                    <div class="relative h-96 bg-gray-200">
-                        <div id="imageSlider" class="relative h-full overflow-hidden">
-                            @foreach($listing->images as $image)
-                                <div class="absolute inset-0 transition-opacity duration-300 {{ $loop->first ? 'opacity-100' : 'opacity-0' }}" data-slide="{{ $loop->index }}">
-                                    <img src="{{ listing_image($image->image_path, 'large') }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
-                                </div>
-                            @endforeach
-                        </div>
-                        
-                        <!-- Featured Badge -->
-                        @if($listing->isFeaturedActive())
-                            <div class="absolute top-4 left-4 bg-yellow-500 text-white px-4 py-2 rounded-full font-semibold z-10">
-                                <i class="fas fa-star"></i> Istaknuto
-                            </div>
-                        @endif
-
-                        <!-- Image Counter -->
-                        <div class="absolute top-4 right-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm z-10">
-                            <span id="currentImageIndex">1</span> / {{ $listing->images->count() }}
-                        </div>
-
-                        <!-- Navigation Arrows -->
-                        @if($listing->images->count() > 1)
-                            <button onclick="changeImage('prev')" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition z-10">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <button onclick="changeImage('next')" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-75 text-white rounded-full flex items-center justify-center transition z-10">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        @endif
-                    </div>
-
-                    <!-- Thumbnail Gallery -->
-                    @if($listing->images->count() > 1)
-                        <div class="p-4 grid grid-cols-6 gap-2">
-                            @foreach($listing->images as $image)
-                                <div class="cursor-pointer hover:opacity-75 transition-opacity border-2 rounded {{ $loop->first ? 'border-blue-500' : 'border-transparent' }}" 
-                                     data-thumbnail="{{ $loop->index }}"
-                                     onclick="goToImage({{ $loop->index }})">
-                                    <img src="{{ listing_image($image->image_path, 'thumbnail') }}" alt="Slika {{ $loop->iteration }}" 
-                                         class="w-full h-20 object-cover rounded">
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                @else
-                    <div class="h-96 bg-gray-200 flex items-center justify-center">
-                        <i class="fas fa-image text-6xl text-gray-400"></i>
-                    </div>
-                @endif
-            </div>
+           <!-- Images Gallery -->
+@if($listing->images->count() > 0)
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden p-6 mb-6">
+        <x-image-gallery-main :images="$listing->images" :title="$listing->title" />
+    </div>
+@endif
 
             <!-- Listing Details -->
             <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
