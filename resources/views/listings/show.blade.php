@@ -2,6 +2,15 @@
 
 @section('title', $listing->title)
 
+@section('breadcrumbs')
+    <x-breadcrumbs :items="[
+        ['title' => 'Oglasi', 'url' => route('listings.index')],
+        ['title' => $listing->category->name, 'url' => route('listings.index', ['category' => $listing->category_id])],
+        ['title' => $listing->city, 'url' => route('listings.index', ['city' => $listing->city])],
+        ['title' => \Str::limit($listing->title, 50), 'url' => route('listings.show', $listing->slug)]
+    ]" />
+@endsection
+
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     

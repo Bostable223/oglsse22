@@ -2,6 +2,14 @@
 
 @section('title', 'Admin - Analitika paketa')
 
+@section('breadcrumbs')
+    <x-breadcrumbs :items="[
+        ['title' => 'Admin Panel', 'url' => route('admin.dashboard')],
+        ['title' => 'Paketi', 'url' => route('admin.packages')],
+        ['title' => 'Analitika', 'url' => route('admin.packages.analytics')]
+    ]" />
+@endsection
+
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     

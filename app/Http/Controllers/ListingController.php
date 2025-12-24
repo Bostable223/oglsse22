@@ -204,6 +204,20 @@ class ListingController extends Controller
             'categories',
             'cities'
         ));
+
+            // Get selected category for breadcrumbs
+            $selectedCategory = null;
+            if ($request->filled('category')) {
+                $selectedCategory = Category::find($request->category);
+            }
+
+            return view('listings.index', compact(
+                'listings',
+                'featuredListings',
+                'categories',
+                'cities',
+                'selectedCategory' // Add this
+            ));
     }
 
     /**

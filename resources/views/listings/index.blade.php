@@ -2,6 +2,17 @@
 
 @section('title', 'Svi oglasi')
 
+@section('breadcrumbs')
+    @php
+        $breadcrumbItems = [['title' => 'Oglasi', 'url' => route('listings.index')]];
+        
+        if(isset($selectedCategory)) {
+            $breadcrumbItems[] = ['title' => $selectedCategory->name, 'url' => route('listings.index', ['category' => $selectedCategory->id])];
+        }
+    @endphp
+    <x-breadcrumbs :items="$breadcrumbItems" />
+@endsection
+
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     

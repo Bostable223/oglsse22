@@ -2,6 +2,13 @@
 
 @section('title', 'Postavi novi oglas')
 
+@section('breadcrumbs')
+    <x-breadcrumbs :items="[
+        ['title' => 'Dashboard', 'url' => route('dashboard.index')],
+        ['title' => 'Novi oglas', 'url' => route('listings.create')]
+    ]" />
+@endsection
+
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     

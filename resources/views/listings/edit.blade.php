@@ -2,6 +2,14 @@
 
 @section('title', 'Izmeni oglas')
 
+@section('breadcrumbs')
+    <x-breadcrumbs :items="[
+        ['title' => 'Dashboard', 'url' => route('dashboard.index')],
+        ['title' => 'Moji oglasi', 'url' => route('dashboard.my-listings')],
+        ['title' => 'Izmeni oglas', 'url' => route('listings.edit', $listing->slug)]
+    ]" />
+@endsection
+
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     

@@ -2,6 +2,8 @@
 
 @section('title', 'Početna')
 
+{{-- No breadcrumbs on homepage --}}
+
 @section('content')
 <!-- Hero Section -->
 <div class="relative min-h-screen flex items-center py-12 md:py-0">

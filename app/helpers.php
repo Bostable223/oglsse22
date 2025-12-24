@@ -172,3 +172,16 @@ if (!function_exists('serbian_cities')) {
         ];
     }
 }
+
+if (!function_exists('breadcrumbs')) {
+    /**
+     * Generate breadcrumbs array
+     *
+     * @param array $items
+     * @return array
+     */
+    function breadcrumbs(array $items = []): array
+    {
+        return $items;
+    }
+}

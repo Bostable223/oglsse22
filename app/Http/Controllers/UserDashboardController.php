@@ -96,39 +96,38 @@ class UserDashboardController extends Controller
     }
 
     /**
-     * Toggle favorite status for a listing
-     * 
-     * Route: POST /listings/{id}/favorite
-     */
-    public function toggleFavorite($id)
-    {
-        $user = Auth::user();
-        $listing = Listing::findOrFail($id);
+ * Toggle favorite status for a listing
+ * 
+ * Route: POST /listings/{id}/favorite
+ */
+public function toggleFavorite($id)
+{
+    $user = Auth::user();
+    $listing = Listing::findOrFail($id);
 
-        // Check if already favorited
-        if ($user->favorites()->where('listing_id', $id)->exists()) {
-            // Remove from favorites
-            $user->favorites()->detach($id);
-            $message = 'Uklonjeno iz omiljenih';
-            $favorited = false;
-        } else {
-            // Add to favorites
-            $user->favorites()->attach($id);
-            $message = 'Dodato u omiljene';
-            $favorited = true;
-        }
-
-        // Return JSON response for AJAX requests
-        if (request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'favorited' => $favorited,
-                'message' => $message
-            ]);
-        }
-
-        return back()->with('success', $message);
+    // Check if already favorited
+    $isFavorited = $user->favorites()->where('listing_id', $id)->exists();
+    
+    if ($isFavorited) {
+        // Remove from favorites
+        $user->favorites()->detach($id);
+        $message = 'Uklonjeno iz omiljenih';
+        $favorited = false;
+    } else {
+        // Add to favorites
+        $user->favorites()->attach($id);
+        $message = 'Dodato u omiljene';
+        $favorited = true;
     }
+
+    // Always return JSON for AJAX requests
+    return response()->json([
+        'success' => true,
+        'favorited' => $favorited,
+        'message' => $message,
+        'favorites_count' => $user->favorites()->count()
+    ]);
+}
 
     /**
      * Show user profile edit form

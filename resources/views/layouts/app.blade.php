@@ -93,6 +93,11 @@
     <!-- Flash Messages -->
     <x-toast />
 
+    <!-- Breadcrumbs Section -->
+        @hasSection('breadcrumbs')
+            @yield('breadcrumbs')
+        @endif
+
     <!-- Main Content -->
     <main class="min-h-screen">
         @yield('content')
@@ -144,7 +149,83 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <script>
+// Toggle Favorite Function
+async function toggleFavorite(button) {
+    const listingId = button.dataset.listingId;
+    const isFavorited = button.dataset.favorited === 'true';
     
+    // Disable button during request
+    button.disabled = true;
+    
+    try {
+        const response = await fetch(`/listings/${listingId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update button state
+            button.dataset.favorited = data.favorited;
+            
+            // Update button appearance
+            if (data.favorited) {
+                button.classList.remove('bg-white', 'text-gray-600', 'border', 'border-gray-300', 'hover:bg-gray-100');
+                button.classList.add('bg-red-500', 'text-white', 'hover:bg-red-600');
+                button.title = 'Ukloni iz omiljenih';
+                
+                // Animation: scale up then back
+                button.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 200);
+            } else {
+                button.classList.remove('bg-red-500', 'text-white', 'hover:bg-red-600');
+                button.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-300', 'hover:bg-gray-100');
+                button.title = 'Dodaj u omiljene';
+            }
+
+            // Show toast notification
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success', 2000);
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        if (typeof showToast === 'function') {
+            showToast('Došlo je do greške. Pokušajte ponovo.', 'error');
+        }
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+    }
+}
+</script>
+
+<style>
+.favorite-btn {
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.favorite-btn:active {
+    transform: scale(0.95);
+}
+</style>
 
 @stack('scripts')
 
