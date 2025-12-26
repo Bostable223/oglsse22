@@ -1,438 +1,458 @@
-@props([
-    'layout' => 'hero', // 'hero' for homepage, 'compact' for listings page
-    'categories' => [],
-    'showAdvanced' => false
-])
+{{-- resources/views/components/search-widget.blade.php --}}
+@props(['layout' => 'hero', 'categories' => [], 'locations' => []])
 
-<div x-data="searchWidget()" 
-     x-init="init()"
-     class="{{ $layout === 'hero' ? 'w-full' : 'w-full' }}">
-    
-    <form action="{{ route('listings.index') }}" 
-          method="GET" 
-          @submit="saveSearch()"
-          class="{{ $layout === 'hero' 
-              ? 'bg-white rounded-2xl shadow-2xl p-6 w-full' 
-              : 'bg-white rounded-lg shadow-sm p-4 border border-gray-200' }}">
+@php
+    $isHero = $layout === 'hero';
+    $isSidebar = $layout === 'sidebar';
+@endphp
 
-        <!-- Main Search Row -->
-        <div class="grid grid-cols-1 {{ $layout === 'hero' ? 'lg:grid-cols-4' : 'md:grid-cols-4' }} gap-4 mb-4">
+@if($isHero)
+    {{-- Hero Layout (Homepage) --}}
+    <div class="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+        <form action="{{ route('listings.index') }}" method="GET">
             
-            <!-- Location with Autocomplete -->
-            <div class="relative">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-map-marker-alt text-blue-600 mr-1"></i>
-                    Lokacija
-                </label>
-                <input 
-                    type="text" 
-                    name="city" 
-                    x-model="search.city"
-                    @input="searchLocations()"
-                    @focus="showLocationDropdown = true"
-                    placeholder="Grad, opština..."
-                    autocomplete="off"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                
-                <!-- Autocomplete Dropdown -->
-                <div x-show="showLocationDropdown && filteredLocations.length > 0"
-                     @click.away="showLocationDropdown = false"
-                     x-transition
-                     class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
-                    <template x-for="location in filteredLocations" :key="location">
-                        <div @click="selectLocation(location)"
-                             class="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center">
-                            <i class="fas fa-map-marker-alt text-blue-600 mr-2 text-sm"></i>
-                            <span x-text="location"></span>
-                        </div>
-                    </template>
+            {{-- Row 1: Category and Listing Type --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {{-- Category Select --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-th-large text-blue-600 mr-1"></i>
+                        Kategorija
+                    </label>
+                    <select name="category" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 font-medium">
+                        <option value="">Sve kategorije</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Listing Type --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tag text-blue-600 mr-1"></i>
+                        Tip oglasa
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 h-[52px]">
+                        <button type="button" 
+                                onclick="selectListingType(event, 'sale')"
+                                class="listing-type-btn px-4 border-2 rounded-xl font-semibold transition-all h-full
+                                       {{ request('listing_type') == 'sale' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:border-blue-300' }}">
+                            Prodaja
+                        </button>
+                        <button type="button" 
+                                onclick="selectListingType(event, 'rent')"
+                                class="listing-type-btn px-4 border-2 rounded-xl font-semibold transition-all h-full
+                                       {{ request('listing_type') == 'rent' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:border-blue-300' }}">
+                            Izdavanje
+                        </button>
+                    </div>
+                    <input type="hidden" name="listing_type" id="listingTypeInput" value="{{ request('listing_type') }}">
                 </div>
             </div>
 
-            <!-- Property Type -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-home text-blue-600 mr-1"></i>
-                    Tip nekretnine
+            {{-- Row 2: Location --}}
+            <div class="mb-4 relative">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-map-marker-alt text-blue-600 mr-1"></i>
+                    Lokacija
                 </label>
+                <input type="text" 
+                       name="city" 
+                       id="locationInput"
+                       value="{{ request('city') }}"
+                       placeholder="Unesite grad ili opštinu..."
+                       autocomplete="off"
+                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                
+                {{-- Autocomplete Dropdown --}}
+                <div id="locationDropdown" 
+                     class="hidden absolute z-10 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {{-- Populated by JavaScript --}}
+                </div>
+            </div>
+
+            {{-- Row 3: Price, Area, Rooms --}}
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                {{-- Price --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-euro-sign text-blue-600 mr-1"></i>
+                        Cena
+                    </label>
+                    <input type="number" 
+                           name="price_max" 
+                           value="{{ request('price_max') }}"
+                           placeholder="Maks"
+                           class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                </div>
+
+                {{-- Area --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-ruler-combined text-blue-600 mr-1"></i>
+                        m²
+                    </label>
+                    <input type="number" 
+                           name="area_min" 
+                           value="{{ request('area_min') }}"
+                           placeholder="Min"
+                           class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                </div>
+
+                {{-- Rooms --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-bed text-blue-600 mr-1"></i>
+                        Sobe
+                    </label>
+                    <select name="rooms" 
+                            class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                        <option value="">Sve</option>
+                        <option value="1" {{ request('rooms') == '1' ? 'selected' : '' }}>1</option>
+                        <option value="2" {{ request('rooms') == '2' ? 'selected' : '' }}>2</option>
+                        <option value="3" {{ request('rooms') == '3' ? 'selected' : '' }}>3</option>
+                        <option value="4" {{ request('rooms') == '4' ? 'selected' : '' }}>4</option>
+                        <option value="5" {{ request('rooms') == '5' ? 'selected' : '' }}>5+</option>
+                    </select>
+                </div>
+            </div>
+
+            {{-- Search Button --}}
+            <button type="submit" 
+                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold text-lg shadow-lg transition-all transform hover:scale-105">
+                <i class="fas fa-search mr-2"></i> Pretraži
+            </button>
+        </form>
+    </div>
+
+@elseif($isSidebar)
+    {{-- Sidebar Layout (Listings Page) --}}
+    <div class="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-filter text-blue-600 mr-2"></i>
+            Filteri
+        </h3>
+
+        <form action="{{ route('listings.index') }}" method="GET" id="sidebarSearchForm">
+            
+            {{-- Category Filter --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Kategorija</label>
                 <select name="category" 
-                        x-model="search.category"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        onchange="this.form.submit()"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">Sve kategorije</option>
                     @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Transaction Type -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-exchange-alt text-blue-600 mr-1"></i>
-                    Transakcija
-                </label>
-                <div class="flex gap-2">
+            {{-- Location Filter --}}
+            <div class="mb-4 relative">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Lokacija</label>
+                <input type="text" 
+                       name="city" 
+                       id="sidebarLocationInput"
+                       value="{{ request('city') }}"
+                       placeholder="Grad ili opština..."
+                       autocomplete="off"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                
+                <div id="sidebarLocationDropdown" 
+                     class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                </div>
+            </div>
+
+            {{-- Listing Type Filter --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tip oglasa</label>
+                <div class="grid grid-cols-2 gap-2">
                     <button type="button" 
-                            @click="toggleListingType('sale')"
-                            :class="search.listing_type === 'sale' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
-                            class="flex-1 px-4 py-3 rounded-lg font-medium transition-all hover:shadow">
+                            onclick="selectSidebarListingType(event, 'sale')"
+                            class="sidebar-type-btn px-3 py-2 text-sm border rounded-lg font-medium transition-all
+                                   {{ request('listing_type') == 'sale' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:border-blue-300' }}">
                         Prodaja
                     </button>
                     <button type="button" 
-                            @click="toggleListingType('rent')"
-                            :class="search.listing_type === 'rent' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
-                            class="flex-1 px-4 py-3 rounded-lg font-medium transition-all hover:shadow">
+                            onclick="selectSidebarListingType(event, 'rent')"
+                            class="sidebar-type-btn px-3 py-2 text-sm border rounded-lg font-medium transition-all
+                                   {{ request('listing_type') == 'rent' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:border-blue-300' }}">
                         Izdavanje
                     </button>
                 </div>
-                <input type="hidden" name="listing_type" x-model="search.listing_type">
+                <input type="hidden" name="listing_type" id="sidebarListingTypeInput" value="{{ request('listing_type') }}">
             </div>
 
-            <!-- Search Button -->
-            <div class="flex items-end">
-                <button type="submit" 
-                        class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-search"></i>
-                    <span>Pretraži</span>
-                    <span x-show="resultCount !== null" 
-                          x-text="`(${resultCount})`"
-                          class="text-sm"></span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Price Range Slider -->
-        <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
-                <label class="text-sm font-medium text-gray-700">
-                    <i class="fas fa-dollar-sign text-blue-600 mr-1"></i>
-                    Cena
-                </label>
-                <span class="text-sm text-gray-600">
-                    <span x-text="formatPrice(search.price_min)"></span> - 
-                    <span x-text="formatPrice(search.price_max)"></span>
-                </span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
+            {{-- Price Range --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Cena</label>
+                <div class="grid grid-cols-2 gap-2">
                     <input type="number" 
                            name="price_min" 
-                           x-model="search.price_min"
-                           @input="debouncedCountResults()"
-                           placeholder="Min"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
+                           value="{{ request('price_min') }}"
+                           placeholder="Od"
+                           class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                     <input type="number" 
                            name="price_max" 
-                           x-model="search.price_max"
-                           @input="debouncedCountResults()"
-                           placeholder="Max"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                           value="{{ request('price_max') }}"
+                           placeholder="Do"
+                           class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                 </div>
             </div>
-        </div>
 
-        <!-- Advanced Filters Toggle -->
-        <div class="border-t border-gray-200 pt-4">
-            <button type="button" 
-                    @click="showAdvancedFilters = !showAdvancedFilters"
-                    class="flex items-center justify-between w-full text-left text-gray-700 hover:text-blue-600 transition-colors">
-                <span class="font-medium">
-                    <i class="fas fa-sliders-h mr-2"></i>
-                    Dodatni filteri
-                </span>
-                <i class="fas" :class="showAdvancedFilters ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-            </button>
-
-            <!-- Advanced Filters Content -->
-            <div x-show="showAdvancedFilters" 
-                 x-collapse
-                 class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                <!-- Area Range -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Površina (m²)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="number" 
-                               name="area_min" 
-                               x-model="search.area_min"
-                               placeholder="Min"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                        <input type="number" 
-                               name="area_max" 
-                               x-model="search.area_max"
-                               placeholder="Max"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                    </div>
-                </div>
-
-                <!-- Rooms -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Broj soba</label>
-                    <select name="rooms" 
-                            x-model="search.rooms"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                        <option value="">Bilo koji</option>
-                        <option value="0.5">Garsonjera</option>
-                        <option value="1">1 soba</option>
-                        <option value="1.5">1.5 soba</option>
-                        <option value="2">2 sobe</option>
-                        <option value="2.5">2.5 soba</option>
-                        <option value="3">3 sobe</option>
-                        <option value="3.5">3.5 soba</option>
-                        <option value="4">4+ soba</option>
-                    </select>
-                </div>
-
-                <!-- Floor -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sprat</label>
-                    <select name="floor" 
-                            x-model="search.floor"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                        <option value="">Bilo koji</option>
-                        <option value="0">Prizemlje</option>
-                        <option value="1-3">1-3 sprat</option>
-                        <option value="4-6">4-6 sprat</option>
-                        <option value="7+">7+ sprat</option>
-                    </select>
-                </div>
-
-                <!-- Features Checkboxes -->
-                <div class="md:col-span-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Karakteristike</label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="parking" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Parking</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="lift" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Lift</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="balcony" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Balkon</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="garage" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Garaža</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="furnished" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Namešten</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="ac" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Klima</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="heating" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Centralno grejanje</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="features[]" value="terrace" 
-                                   class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Terasa</span>
-                        </label>
-                    </div>
+            {{-- Area Range --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Površina (m²)</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" 
+                           name="area_min" 
+                           value="{{ request('area_min') }}"
+                           placeholder="Od"
+                           class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    <input type="number" 
+                           name="area_max" 
+                           value="{{ request('area_max') }}"
+                           placeholder="Do"
+                           class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                 </div>
             </div>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-            <button type="button" 
-                    @click="resetFilters()"
-                    class="text-gray-600 hover:text-gray-900 font-medium text-sm">
-                <i class="fas fa-redo mr-1"></i>
-                Resetuj filtere
-            </button>
+            {{-- Rooms Filter --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Broj soba</label>
+                <select name="rooms" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    <option value="">Sve</option>
+                    <option value="1" {{ request('rooms') == '1' ? 'selected' : '' }}>1</option>
+                    <option value="2" {{ request('rooms') == '2' ? 'selected' : '' }}>2</option>
+                    <option value="3" {{ request('rooms') == '3' ? 'selected' : '' }}>3</option>
+                    <option value="4" {{ request('rooms') == '4' ? 'selected' : '' }}>4</option>
+                    <option value="5" {{ request('rooms') == '5' ? 'selected' : '' }}>5+</option>
+                </select>
+            </div>
 
-            @auth
-            <button type="button" 
-                    @click="saveCurrentSearch()"
-                    class="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                <i class="fas fa-bookmark mr-1"></i>
-                Sačuvaj pretragu
-            </button>
-            @endauth
-        </div>
-    </form>
+            {{-- Floor Filter --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Sprat</label>
+                <select name="floor" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    <option value="">Sve</option>
+                    <option value="0" {{ request('floor') == '0' ? 'selected' : '' }}>Prizemlje</option>
+                    <option value="1-3" {{ request('floor') == '1-3' ? 'selected' : '' }}>1-3</option>
+                    <option value="4-6" {{ request('floor') == '4-6' ? 'selected' : '' }}>4-6</option>
+                    <option value="7+" {{ request('floor') == '7+' ? 'selected' : '' }}>7+</option>
+                </select>
+            </div>
 
-    <!-- Recent Searches (Optional) -->
-    @auth
-    <div x-show="recentSearches.length > 0" class="mt-4">
-        <div class="text-sm text-gray-600 mb-2">Nedavne pretrage:</div>
-        <div class="flex flex-wrap gap-2">
-            <template x-for="search in recentSearches.slice(0, 3)" :key="search.id">
-                <button @click="loadSavedSearch(search)"
-                        class="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-colors">
-                    <i class="fas fa-clock mr-1"></i>
-                    <span x-text="search.name"></span>
+            {{-- Features Filter --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Karakteristike</label>
+                <div class="space-y-2">
+                    @php
+                        $availableFeatures = ['Parking', 'Lift', 'Balkon', 'Klima', 'Centralno grejanje', 'Renoviran'];
+                        $selectedFeatures = request('features', []);
+                    @endphp
+                    @foreach($availableFeatures as $feature)
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" 
+                                   name="features[]" 
+                                   value="{{ $feature }}"
+                                   {{ in_array($feature, $selectedFeatures) ? 'checked' : '' }}
+                                   class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">{{ $feature }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Action Buttons --}}
+            <div class="space-y-2">
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition-colors">
+                    <i class="fas fa-search mr-2"></i> Primeni filtere
                 </button>
-            </template>
-        </div>
+                <a href="{{ route('listings.index') }}" 
+                   class="block w-full text-center bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 font-semibold transition-colors">
+                    <i class="fas fa-redo mr-2"></i> Resetuj
+                </a>
+            </div>
+        </form>
     </div>
-    @endauth
-</div>
+@endif
 
+@push('scripts')
 <script>
-function searchWidget() {
-    return {
-        search: {
-            city: '{{ request("city", "") }}',
-            category: '{{ request("category", "") }}',
-            listing_type: '{{ request("listing_type", "") }}',
-            price_min: '{{ request("price_min", "") }}',
-            price_max: '{{ request("price_max", "") }}',
-            area_min: '{{ request("area_min", "") }}',
-            area_max: '{{ request("area_max", "") }}',
-            rooms: '{{ request("rooms", "") }}',
-            floor: '{{ request("floor", "") }}'
-        },
+// Hero Layout Functions
+@if($isHero)
+// Location Autocomplete Data for Hero
+const heroLocations = @json($locations ?? []);
+
+function selectListingType(event, type) {
+    event.preventDefault();
+    
+    const allBtns = document.querySelectorAll('.listing-type-btn');
+    const input = document.getElementById('listingTypeInput');
+    const clickedBtn = event.currentTarget;
+    
+    if (input.value === type) {
+        clickedBtn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+        clickedBtn.classList.add('border-gray-300', 'text-gray-700');
+        input.value = '';
+    } else {
+        allBtns.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.add('border-gray-300', 'text-gray-700');
+        });
         
-        locations: @json($locations ?? []),
-        filteredLocations: [],
-        showLocationDropdown: false,
-        showAdvancedFilters: {{ $showAdvanced ? 'true' : 'false' }},
-        resultCount: null,
-        recentSearches: [],
-        debounceTimer: null,
+        clickedBtn.classList.remove('border-gray-300', 'text-gray-700');
+        clickedBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+        input.value = type;
+    }
+}
 
-        init() {
-            this.loadRecentSearches();
-            this.parseUrlParams();
-        },
+// Location Autocomplete for Hero - Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    const heroLocationInput = document.getElementById('locationInput');
+    const heroLocationDropdown = document.getElementById('locationDropdown');
 
-        parseUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('city')) this.search.city = params.get('city');
-            if (params.has('category')) this.search.category = params.get('category');
-            if (params.has('listing_type')) this.search.listing_type = params.get('listing_type');
-        },
-
-        searchLocations() {
-            if (!this.search.city || this.search.city.length < 2) {
-                this.filteredLocations = [];
+    if (heroLocationInput && heroLocationDropdown && heroLocations) {
+        console.log('Hero autocomplete initialized with', heroLocations.length, 'locations');
+        
+        heroLocationInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            if (searchTerm.length < 2) {
+                heroLocationDropdown.classList.add('hidden');
                 return;
             }
-
-            const term = this.search.city.toLowerCase();
-            this.filteredLocations = this.locations
-                .filter(loc => loc.toLowerCase().includes(term))
-                .slice(0, 10);
             
-            this.showLocationDropdown = this.filteredLocations.length > 0;
-        },
-
-        selectLocation(location) {
-            this.search.city = location;
-            this.showLocationDropdown = false;
-            this.debouncedCountResults();
-        },
-
-        toggleListingType(type) {
-            this.search.listing_type = this.search.listing_type === type ? '' : type;
-            this.debouncedCountResults();
-        },
-
-        debouncedCountResults() {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = setTimeout(() => {
-                this.countResults();
-            }, 500);
-        },
-
-        async countResults() {
-            try {
-                const params = new URLSearchParams();
-                Object.keys(this.search).forEach(key => {
-                    if (this.search[key]) {
-                        params.append(key, this.search[key]);
-                    }
+            // Filter locations (now all strings)
+            const filtered = heroLocations.filter(loc => 
+                loc && loc.toLowerCase().includes(searchTerm)
+            );
+            
+            console.log('Filtered locations:', filtered.length);
+            
+            if (filtered.length === 0) {
+                heroLocationDropdown.classList.add('hidden');
+                return;
+            }
+            
+            // Display results
+            heroLocationDropdown.innerHTML = filtered.slice(0, 10).map(loc => 
+                `<div class="px-4 py-3 hover:bg-blue-50 cursor-pointer location-item border-b border-gray-100 last:border-0" data-location="${loc}">
+                    <i class="fas fa-map-marker-alt text-blue-600 mr-2"></i>${loc}
+                </div>`
+            ).join('');
+            
+            heroLocationDropdown.classList.remove('hidden');
+            
+            document.querySelectorAll('.location-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    heroLocationInput.value = this.dataset.location;
+                    heroLocationDropdown.classList.add('hidden');
                 });
-
-                const response = await fetch(`/api/listings/count?${params.toString()}`);
-                const data = await response.json();
-                this.resultCount = data.count;
-            } catch (error) {
-                console.error('Error counting results:', error);
-            }
-        },
-
-        resetFilters() {
-            this.search = {
-                city: '',
-                category: '',
-                listing_type: '',
-                price_min: '',
-                price_max: '',
-                area_min: '',
-                area_max: '',
-                rooms: '',
-                floor: ''
-            };
-            this.resultCount = null;
-        },
-
-        formatPrice(price) {
-            if (!price) return '0';
-            return new Intl.NumberFormat('sr-RS').format(price);
-        },
-
-        loadRecentSearches() {
-            const saved = localStorage.getItem('recentSearches');
-            if (saved) {
-                this.recentSearches = JSON.parse(saved);
-            }
-        },
-
-        saveSearch() {
-            const searchData = {
-                id: Date.now(),
-                name: this.generateSearchName(),
-                params: {...this.search},
-                timestamp: new Date().toISOString()
-            };
-
-            this.recentSearches.unshift(searchData);
-            this.recentSearches = this.recentSearches.slice(0, 5); // Keep last 5
-            localStorage.setItem('recentSearches', JSON.stringify(this.recentSearches));
-        },
-
-        generateSearchName() {
-            let parts = [];
-            if (this.search.listing_type) parts.push(this.search.listing_type === 'sale' ? 'Prodaja' : 'Izdavanje');
-            if (this.search.category) parts.push('Kategorija');
-            if (this.search.city) parts.push(this.search.city);
-            return parts.length > 0 ? parts.join(' - ') : 'Pretraga';
-        },
-
-        async saveCurrentSearch() {
-            // TODO: Save to database via API
-            if (typeof showToast === 'function') {
-                showToast('Pretraga je sačuvana!', 'success');
-            }
-            this.saveSearch();
-        },
-
-        loadSavedSearch(savedSearch) {
-            this.search = {...savedSearch.params};
-            this.$nextTick(() => {
-                this.$el.querySelector('form').submit();
             });
-        }
-    };
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!heroLocationInput.contains(e.target) && !heroLocationDropdown.contains(e.target)) {
+                heroLocationDropdown.classList.add('hidden');
+            }
+        });
+    }
+});
+@endif
+
+// Sidebar Layout Functions
+@if($isSidebar)
+// Location Autocomplete Data for Sidebar
+const sidebarLocations = @json($locations ?? []);
+
+function selectSidebarListingType(event, type) {
+    event.preventDefault();
+    
+    const allBtns = document.querySelectorAll('.sidebar-type-btn');
+    const input = document.getElementById('sidebarListingTypeInput');
+    const clickedBtn = event.currentTarget;
+    const form = document.getElementById('sidebarSearchForm');
+    
+    if (input.value === type) {
+        clickedBtn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+        clickedBtn.classList.add('border-gray-300', 'text-gray-700');
+        input.value = '';
+    } else {
+        allBtns.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.add('border-gray-300', 'text-gray-700');
+        });
+        
+        clickedBtn.classList.remove('border-gray-300', 'text-gray-700');
+        clickedBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+        input.value = type;
+    }
+    
+    // Auto-submit form
+    form.submit();
 }
+
+// Location Autocomplete for Sidebar - Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarLocationInput = document.getElementById('sidebarLocationInput');
+    const sidebarLocationDropdown = document.getElementById('sidebarLocationDropdown');
+
+    if (sidebarLocationInput && sidebarLocationDropdown && sidebarLocations) {
+        console.log('Sidebar autocomplete initialized with', sidebarLocations.length, 'locations');
+        
+        sidebarLocationInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            if (searchTerm.length < 2) {
+                sidebarLocationDropdown.classList.add('hidden');
+                return;
+            }
+            
+            // Filter locations (now all strings)
+            const filtered = sidebarLocations.filter(loc => 
+                loc && loc.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filtered.length === 0) {
+                sidebarLocationDropdown.classList.add('hidden');
+                return;
+            }
+            
+            // Display results
+            sidebarLocationDropdown.innerHTML = filtered.slice(0, 8).map(loc => 
+                `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer sidebar-location-item text-sm border-b border-gray-100 last:border-0" data-location="${loc}">
+                    <i class="fas fa-map-marker-alt text-blue-600 mr-2 text-xs"></i>${loc}
+                </div>`
+            ).join('');
+            
+            sidebarLocationDropdown.classList.remove('hidden');
+            
+            document.querySelectorAll('.sidebar-location-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    sidebarLocationInput.value = this.dataset.location;
+                    sidebarLocationDropdown.classList.add('hidden');
+                });
+            });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!sidebarLocationInput.contains(e.target) && !sidebarLocationDropdown.contains(e.target)) {
+                sidebarLocationDropdown.classList.add('hidden');
+            }
+        });
+    }
+});
+@endif
 </script>
+@endpush

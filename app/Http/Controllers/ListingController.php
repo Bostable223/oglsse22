@@ -18,52 +18,61 @@ class ListingController extends Controller
      * Route: GET /
      */
     public function home()
-    {
-        // Get featured listings
-        $featuredListings = Listing::with(['category', 'primaryImage'])
-                                   ->where('status', 'active')
-                                   ->whereNotNull('published_at')
-                                   ->where('published_at', '<=', now())
-                                   ->where('is_featured', true)
-                                   ->where(function($q) {
-                                       $q->whereNull('featured_until')
-                                         ->orWhere('featured_until', '>', now());
-                                   })
-                                   ->limit(8)
-                                   ->get();
+{
+    // Get featured listings
+    $featuredListings = Listing::with(['category', 'primaryImage'])
+                               ->where('status', 'active')
+                               ->whereNotNull('published_at')
+                               ->where('published_at', '<=', now())
+                               ->where('is_featured', true)
+                               ->where(function($q) {
+                                   $q->whereNull('featured_until')
+                                     ->orWhere('featured_until', '>', now());
+                               })
+                               ->limit(8)
+                               ->get();
 
-        // Get new listings (most recent)
-        $newListings = Listing::with(['category', 'primaryImage'])
-                              ->where('status', 'active')
-                              ->whereNotNull('published_at')
-                              ->where('published_at', '<=', now())
-                              ->orderBy('published_at', 'desc')
-                              ->limit(8)
-                              ->get();
+    // Get new listings (most recent)
+    $newListings = Listing::with(['category', 'primaryImage'])
+                          ->where('status', 'active')
+                          ->whereNotNull('published_at')
+                          ->where('published_at', '<=', now())
+                          ->orderBy('published_at', 'desc')
+                          ->limit(8)
+                          ->get();
 
-        // Get all categories
-        $categories = Category::where('is_active', true)
-                              ->orderBy('order')
-                              ->withCount('listings')
-                              ->get();
+    // Get all categories
+    $categories = Category::where('is_active', true)
+                          ->orderBy('order')
+                          ->withCount('listings')
+                          ->get();
 
-        // Get statistics for hero
-        $stats = [
-            'total_listings' => Listing::where('status', 'active')->count(),
-            'active_users' => User::where('role', 'user')->count(),
-            'cities' => Listing::where('status', 'active')->distinct('city')->count('city'),
-        ];
+    // Get statistics for hero
+    $stats = [
+        'total_listings' => Listing::where('status', 'active')->count(),
+        'active_users' => User::where('role', 'user')->count(),
+        'cities' => Listing::where('status', 'active')->distinct('city')->count('city'),
+    ];
 
-        // Get all unique locations (city, municipality, address parts) for autocomplete
-        $allLocations = Listing::where('status', 'active')
-             ->distinct()
-            ->get(['city', 'municipality'])
-            ->unique()
-            ->sort()
-            ->values();
+    // Get all unique locations (FIXED VERSION)
+    $allLocations = Listing::where('status', 'active')
+        ->select('city', 'municipality')
+        ->distinct()
+        ->get()
+        ->map(function($listing) {
+            // Create formatted location strings
+            if ($listing->municipality) {
+                return $listing->city . ', ' . $listing->municipality;
+            }
+            return $listing->city;
+        })
+        ->filter() // Remove nulls
+        ->unique() // Remove duplicates
+        ->sort() // Sort alphabetically
+        ->values(); // Re-index array
 
-        return view('home', compact('featuredListings', 'newListings', 'categories', 'stats', 'allLocations'));
-    }
+    return view('home', compact('featuredListings', 'newListings', 'categories', 'stats', 'allLocations'));
+}
 
     /**
      * Display a listing of all properties (search results page)
@@ -71,7 +80,7 @@ class ListingController extends Controller
      * Route: GET /listings
      */
     public function index(Request $request)
-    {
+{
     $query = Listing::with(['category', 'primaryImage', 'user'])
         ->where('status', 'active')
         ->whereNotNull('published_at')
@@ -174,26 +183,25 @@ class ListingController extends Controller
     $categories = Category::where('is_active', true)->orderBy('order')->get();
     $selectedCategory = $request->filled('category') ? $categories->find($request->category) : null;
     
-    // Get all unique locations
+    // Get all unique locations (FIXED VERSION)
     $allLocations = Listing::where('status', 'active')
         ->select('city', 'municipality')
         ->distinct()
         ->get()
         ->map(function($listing) {
+            // Create formatted location strings
             if ($listing->municipality) {
                 return $listing->city . ', ' . $listing->municipality;
             }
             return $listing->city;
         })
-        ->unique()
-        ->filter()
-        ->sort()
-        ->values();
+        ->filter() // Remove nulls
+        ->unique() // Remove duplicates
+        ->sort() // Sort alphabetically
+        ->values(); // Re-index array
 
     return view('listings.index', compact('listings', 'categories', 'allLocations', 'selectedCategory'));
-
-            
-    }
+}
 
     /**
      * Show the form for creating a new listing

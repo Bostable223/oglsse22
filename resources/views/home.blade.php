@@ -48,11 +48,11 @@
                 </div>
 
                  <!-- Right: Search Widget -->
-                <div class="flex justify-center">
-                    <x-search-widget 
-                        layout="hero" 
-                        :categories="$categories"
-                        :locations="$allLocations" />
+                <x-search-widget 
+                    layout="hero" 
+                    :categories="$categories"
+                    :locations="$allLocations" />
+
                 </div>
                 
             </div>
