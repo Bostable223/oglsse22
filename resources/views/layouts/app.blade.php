@@ -34,7 +34,10 @@
                             <i class="fas fa-plus mr-2"></i> Postavi oglas
                         </a>
 
-                            <!-- ADD THIS: Notification Bell -->
+                                        <!-- Favorites Counter -->
+                                          <x-favorites-counter />
+
+                            <!-- Notification Bell -->
                             
                                 <x-notification-bell />
                             
@@ -150,8 +153,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-// Toggle Favorite Function
-async function toggleFavorite(button) {
+        // Toggle Favorite Function
+    async function toggleFavorite(button) {
     const listingId = button.dataset.listingId;
     const isFavorited = button.dataset.favorited === 'true';
     
@@ -224,6 +227,129 @@ async function toggleFavorite(button) {
 
 .favorite-btn:active {
     transform: scale(0.95);
+}
+</style>
+
+<script>
+// Toggle Favorite Function with Counter Update
+async function toggleFavorite(button) {
+    const listingId = button.dataset.listingId;
+    const isFavorited = button.dataset.favorited === 'true';
+    
+    // Disable button during request
+    button.disabled = true;
+    
+    try {
+        const response = await fetch(`/listings/${listingId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update button state
+            button.dataset.favorited = data.favorited;
+            
+            // Update button appearance
+            if (data.favorited) {
+                button.classList.remove('bg-white', 'text-gray-600', 'border', 'border-gray-300', 'hover:bg-gray-100');
+                button.classList.add('bg-red-500', 'text-white', 'hover:bg-red-600');
+                button.title = 'Ukloni iz omiljenih';
+                
+                // Animation: scale up then back
+                button.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 200);
+            } else {
+                button.classList.remove('bg-red-500', 'text-white', 'hover:bg-red-600');
+                button.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-300', 'hover:bg-gray-100');
+                button.title = 'Dodaj u omiljene';
+            }
+
+            // Update header counter
+            updateFavoritesCounter(data.favorites_count);
+
+            // Show toast notification
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success', 2000);
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        if (typeof showToast === 'function') {
+            showToast('Došlo je do greške. Pokušajte ponovo.', 'error');
+        }
+    } finally {
+        // Re-enable button
+        button.disabled = false;
+    }
+}
+
+// Update Favorites Counter in Header
+function updateFavoritesCounter(count) {
+    const badge = document.getElementById('favorites-count-badge');
+    if (!badge) return;
+
+    // Update count
+    badge.textContent = count;
+    badge.dataset.count = count;
+
+    // Show/hide badge with animation
+    if (count > 0) {
+        badge.style.display = 'flex';
+        badge.classList.remove('bg-gray-400');
+        badge.classList.add('bg-red-500');
+        
+        // Pulse animation
+        badge.style.animation = 'pulse 0.5s ease-in-out';
+        setTimeout(() => {
+            badge.style.animation = '';
+        }, 500);
+    } else {
+        badge.classList.remove('bg-red-500');
+        badge.classList.add('bg-gray-400');
+        
+        // Fade out
+        badge.style.opacity = '0';
+        setTimeout(() => {
+            badge.style.display = 'none';
+            badge.style.opacity = '1';
+        }, 300);
+    }
+}
+</script>
+
+<style>
+.favorite-btn {
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.favorite-btn:active {
+    transform: scale(0.95);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
 </style>
 

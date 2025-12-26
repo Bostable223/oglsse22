@@ -72,152 +72,127 @@ class ListingController extends Controller
      */
     public function index(Request $request)
     {
-        // Start with active listings query
-        $query = Listing::with(['category', 'primaryImage', 'user'])
-                        ->where('status', 'active')
-                        ->whereNotNull('published_at')
-                        ->where('published_at', '<=', now());
+    $query = Listing::with(['category', 'primaryImage', 'user'])
+        ->where('status', 'active')
+        ->whereNotNull('published_at')
+        ->where('published_at', '<=', now());
 
-        // Apply filters from search form
+    // Apply filters
+    if ($request->filled('category')) {
+        $query->where('category_id', $request->category);
+    }
+
+    if ($request->filled('city')) {
+        $location = $request->city;
+        $parts = array_map('trim', explode(',', $location));
         
-        // Filter by category
-        if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
-        }
-
-        // Filter by city/location
-        if ($request->filled('city')) {
-            $location = $request->city;
-            
-            // Split by comma if format is "City, Municipality"
-            $parts = array_map('trim', explode(',', $location));
-            
-            if (count($parts) > 1) {
-                // Format: "Beograd, Stari Grad"
-                $city = $parts[0];
-                $municipality = $parts[1];
-                
-                $query->where(function($q) use ($city, $municipality) {
-                    $q->where('city', 'like', '%' . $city . '%')
-                      ->where('municipality', 'like', '%' . $municipality . '%');
-                });
-            } else {
-                // Single term - search everywhere
-                $query->where(function($q) use ($location) {
-                    $q->where('city', 'like', '%' . $location . '%')
-                      ->orWhere('municipality', 'like', '%' . $location . '%')
-                      ->orWhere('address', 'like', '%' . $location . '%');
-                });
-            }
-        }
-
-        // Filter by listing type (sale or rent)
-        if ($request->filled('listing_type')) {
-            $query->where('listing_type', $request->listing_type);
-        }
-
-        // Filter by price range
-        if ($request->filled('price_min')) {
-            $query->where('price', '>=', $request->price_min);
-        }
-        if ($request->filled('price_max')) {
-            $query->where('price', '<=', $request->price_max);
-        }
-
-        // Filter by area (square meters)
-        if ($request->filled('area_min')) {
-            $query->where('area', '>=', $request->area_min);
-        }
-        if ($request->filled('area_max')) {
-            $query->where('area', '<=', $request->area_max);
-        }
-
-        // Filter by number of rooms
-        if ($request->filled('rooms')) {
-            $query->where('rooms', $request->rooms);
-        }
-
-        // Search by keyword
-        if ($request->filled('search')) {
-            $keyword = $request->search;
-            $query->where(function($q) use ($keyword) {
-                $q->where('title', 'like', '%' . $keyword . '%')
-                  ->orWhere('description', 'like', '%' . $keyword . '%')
-                  ->orWhere('city', 'like', '%' . $keyword . '%');
+        if (count($parts) > 1) {
+            $city = $parts[0];
+            $municipality = $parts[1];
+            $query->where(function($q) use ($city, $municipality) {
+                $q->where('city', 'like', '%' . $city . '%')
+                  ->where('municipality', 'like', '%' . $municipality . '%');
+            });
+        } else {
+            $query->where(function($q) use ($location) {
+                $q->where('city', 'like', '%' . $location . '%')
+                  ->orWhere('municipality', 'like', '%' . $location . '%')
+                  ->orWhere('address', 'like', '%' . $location . '%');
             });
         }
+    }
 
-        // Sorting
-        $sortBy = $request->get('sort', 'newest');
-        switch ($sortBy) {
-            case 'price_asc':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_desc':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'oldest':
-                $query->orderBy('published_at', 'asc');
-                break;
-            case 'newest':
-            default:
-                // Top listings first, then featured, then by date
-                $query->orderByDesc('is_top')
-                      ->orderByDesc('is_featured')
-                      ->orderBy('published_at', 'desc');
-                break;
+    if ($request->filled('listing_type')) {
+        $query->where('listing_type', $request->listing_type);
+    }
+
+    if ($request->filled('price_min')) {
+        $query->where('price', '>=', $request->price_min);
+    }
+
+    if ($request->filled('price_max')) {
+        $query->where('price', '<=', $request->price_max);
+    }
+
+    if ($request->filled('area_min')) {
+        $query->where('area', '>=', $request->area_min);
+    }
+
+    if ($request->filled('area_max')) {
+        $query->where('area', '<=', $request->area_max);
+    }
+
+    if ($request->filled('rooms')) {
+        $query->where('rooms', $request->rooms);
+    }
+
+    if ($request->filled('floor')) {
+        $floor = $request->floor;
+        if ($floor === '7+') {
+            $query->where('floor', '>=', 7);
+        } elseif (str_contains($floor, '-')) {
+            [$min, $max] = explode('-', $floor);
+            $query->whereBetween('floor', [(int)$min, (int)$max]);
+        } else {
+            $query->where('floor', $floor);
         }
+    }
 
-        // Get featured listings separately for homepage
-        $featuredListings = Listing::with(['category', 'primaryImage'])
-                                   ->where('status', 'active')
-                                   ->whereNotNull('published_at')
-                                   ->where('published_at', '<=', now())
-                                   ->where('is_featured', true)
-                                   ->where(function($q) {
-                                       $q->whereNull('featured_until')
-                                         ->orWhere('featured_until', '>', now());
-                                   })
-                                   ->limit(6)
-                                   ->get();
+    // Features filter - FIXED
+    if ($request->filled('features')) {
+        $features = is_array($request->features) ? $request->features : [$request->features];
+        
+        foreach ($features as $feature) {
+            $query->whereJsonContains('features', $feature);
+        }
+    }
 
-        // Paginate results (15 per page)
-        $listings = $query->paginate(15)->withQueryString();
+    // Sorting
+    $sortBy = $request->get('sort', 'newest');
+    switch ($sortBy) {
+        case 'price_asc':
+            $query->orderBy('price', 'asc');
+            break;
+        case 'price_desc':
+            $query->orderBy('price', 'desc');
+            break;
+        case 'area_desc':
+            $query->orderBy('area', 'desc');
+            break;
+        case 'oldest':
+            $query->orderBy('published_at', 'asc');
+            break;
+        case 'newest':
+        default:
+            $query->orderByDesc('is_top')
+                  ->orderByDesc('is_featured')
+                  ->orderBy('published_at', 'desc');
+            break;
+    }
 
-        // Get all categories for filter dropdown
-        $categories = Category::where('is_active', true)
-                              ->orderBy('order')
-                              ->get();
-
-        // Get unique cities for filter dropdown
-        $cities = Listing::where('status', 'active')
-                        ->whereNotNull('published_at')
-                        ->where('published_at', '<=', now())
-                        ->distinct()
-                        ->pluck('city')
-                        ->sort()
-                        ->values();
-
-        return view('listings.index', compact(
-            'listings',
-            'featuredListings',
-            'categories',
-            'cities'
-        ));
-
-            // Get selected category for breadcrumbs
-            $selectedCategory = null;
-            if ($request->filled('category')) {
-                $selectedCategory = Category::find($request->category);
+    $listings = $query->paginate(15)->withQueryString();
+    $categories = Category::where('is_active', true)->orderBy('order')->get();
+    $selectedCategory = $request->filled('category') ? $categories->find($request->category) : null;
+    
+    // Get all unique locations
+    $allLocations = Listing::where('status', 'active')
+        ->select('city', 'municipality')
+        ->distinct()
+        ->get()
+        ->map(function($listing) {
+            if ($listing->municipality) {
+                return $listing->city . ', ' . $listing->municipality;
             }
+            return $listing->city;
+        })
+        ->unique()
+        ->filter()
+        ->sort()
+        ->values();
 
-            return view('listings.index', compact(
-                'listings',
-                'featuredListings',
-                'categories',
-                'cities',
-                'selectedCategory' // Add this
-            ));
+    return view('listings.index', compact('listings', 'categories', 'allLocations', 'selectedCategory'));
+
+            
     }
 
     /**

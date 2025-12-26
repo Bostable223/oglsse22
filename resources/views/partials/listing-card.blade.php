@@ -24,10 +24,15 @@
                 </div>
             @endif
 
-            <!-- Favorite Button -->
-            <div class="absolute top-2 right-2" onclick="event.preventDefault();">
-                <x-favorite-button :listing="$listing" size="default" />
-            </div>
+            <!-- Favorite Button (Bottom Right) -->
+            @auth
+                <form action="{{ route('listings.favorite', $listing->id) }}" method="POST" class="absolute bottom-2 right-2" onclick="event.stopPropagation()">
+                    @csrf
+                    <button type="submit" class="bg-white bg-opacity-90 hover:bg-opacity-100 p-2 rounded-full shadow-lg transition-all">
+                        <i class="fas fa-heart {{ $listing->isFavoritedBy(auth()->user()) ? 'text-red-500' : 'text-gray-400' }} text-lg"></i>
+                    </button>
+                </form>
+            @endauth
         </div>
 
         <!-- Content -->

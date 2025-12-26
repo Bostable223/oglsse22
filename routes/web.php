@@ -125,3 +125,47 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Package analytics
     Route::get('/packages/analytics', [AdminController::class, 'packageAnalytics'])->name('packages.analytics');
 });
+
+// API endpoint for counting search results
+Route::get('/api/listings/count', function(Request $request) {
+    $query = Listing::where('status', 'active')
+        ->whereNotNull('published_at')
+        ->where('published_at', '<=', now());
+
+    // Apply all filters
+    if ($request->filled('city')) {
+        $query->where('city', 'like', '%' . $request->city . '%');
+    }
+
+    if ($request->filled('category')) {
+        $query->where('category_id', $request->category);
+    }
+
+    if ($request->filled('listing_type')) {
+        $query->where('listing_type', $request->listing_type);
+    }
+
+    if ($request->filled('price_min')) {
+        $query->where('price', '>=', $request->price_min);
+    }
+
+    if ($request->filled('price_max')) {
+        $query->where('price', '<=', $request->price_max);
+    }
+
+    if ($request->filled('area_min')) {
+        $query->where('area', '>=', $request->area_min);
+    }
+
+    if ($request->filled('area_max')) {
+        $query->where('area', '<=', $request->area_max);
+    }
+
+    if ($request->filled('rooms')) {
+        $query->where('rooms', $request->rooms);
+    }
+
+    return response()->json([
+        'count' => $query->count()
+    ]);
+});

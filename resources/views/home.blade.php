@@ -47,115 +47,14 @@
                     </div>
                 </div>
 
-                <!-- Right Side - Search Form (100% scale) -->
+                 <!-- Right: Search Widget -->
                 <div class="flex justify-center">
-                    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full lg:max-w-md" style="transform: scale(1.0); transform-origin: right center;">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-6">Pretraži nekretnine</h3>
-                        
-                        <form action="{{ route('listings.index') }}" method="GET">
-                            <!-- Location with Autocomplete -->
-                            <div class="mb-4 relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Lokacija</label>
-                                <input 
-                                    type="text" 
-                                    name="city" 
-                                    id="locationInput"
-                                    placeholder="Grad, opština ili naselje"
-                                    autocomplete="off"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                <div id="locationDropdown" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto"></div>
-                            </div>
-
-                            <!-- Property Type and Transaction Type in Same Row -->
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <!-- Property Type -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tip nekretnine</label>
-                                    <select name="category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Sve</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <!-- Listing Type (Rent/Sale Buttons) -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Transakcija</label>
-                                    <div class="flex gap-2">
-                                        <button type="button" onclick="selectListingType(event, 'sale')" data-type="sale"
-                                                class="listing-type-btn flex-1 px-3 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition-colors text-center font-medium text-sm">
-                                            Prodaja
-                                        </button>
-                                        <button type="button" onclick="selectListingType(event, 'rent')" data-type="rent"
-                                                class="listing-type-btn flex-1 px-3 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition-colors text-center font-medium text-sm">
-                                            Izdavanje
-                                        </button>
-                                    </div>
-                                    <input type="hidden" name="listing_type" id="listingTypeInput" value="">
-                                </div>
-                            </div>
-
-                            <!-- Price Range -->
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Min. Cena</label>
-                                    <input 
-                                        type="number" 
-                                        name="price_min" 
-                                        placeholder="0"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Max. Cena</label>
-                                    <input 
-                                        type="number" 
-                                        name="price_max" 
-                                        placeholder="∞"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                </div>
-                            </div>
-
-                            <!-- Area and Rooms -->
-                            <div class="grid grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Površina (m²)</label>
-                                    <select name="area_min" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Bilo koja</option>
-                                        <option value="20">20+ m²</option>
-                                        <option value="40">40+ m²</option>
-                                        <option value="60">60+ m²</option>
-                                        <option value="80">80+ m²</option>
-                                        <option value="100">100+ m²</option>
-                                        <option value="150">150+ m²</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Sobe</label>
-                                    <select name="rooms" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Bilo koji</option>
-                                        <option value="0.5">0.5</option>
-                                        <option value="1">1</option>
-                                        <option value="1.5">1.5</option>
-                                        <option value="2">2</option>
-                                        <option value="2.5">2.5</option>
-                                        <option value="3">3</option>
-                                        <option value="3.5">3.5</option>
-                                        <option value="4">4+</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Search Button -->
-                            <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-lg hover:bg-blue-700 font-semibold text-lg transition-colors">
-                                <i class="fas fa-search mr-2"></i> Pretraži
-                            </button>
-                        </form>
-                    </div>
+                    <x-search-widget 
+                        layout="hero" 
+                        :categories="$categories"
+                        :locations="$allLocations" />
                 </div>
+                
             </div>
         </div>
     </div>
