@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ListingController extends Controller
 {
@@ -42,34 +43,30 @@ class ListingController extends Controller
                           ->get();
 
     // Get all categories
-    $categories = Category::where('is_active', true)
-                          ->orderBy('order')
-                          ->withCount('listings')
-                          ->get();
+    $categories = Cache::remember('active_categories', 60*60*24, function () {
+        return Category::where('is_active', true)->orderBy('order')->withCount('listings')->get();
+    });
 
     // Get statistics for hero
-    $stats = [
+    $stats = Cache::remember('homepage_stats', 60*30, function () {
+    return [
         'total_listings' => Listing::where('status', 'active')->count(),
         'active_users' => User::where('role', 'user')->count(),
         'cities' => Listing::where('status', 'active')->distinct('city')->count('city'),
     ];
+    });
 
     // Get all unique locations (FIXED VERSION)
-    $allLocations = Listing::where('status', 'active')
-        ->select('city', 'municipality')
-        ->distinct()
-        ->get()
-        ->map(function($listing) {
-            // Create formatted location strings
-            if ($listing->municipality) {
-                return $listing->city . ', ' . $listing->municipality;
-            }
-            return $listing->city;
-        })
-        ->filter() // Remove nulls
-        ->unique() // Remove duplicates
-        ->sort() // Sort alphabetically
-        ->values(); // Re-index array
+// Concatenates City and Municipality at the database level
+        $allLocations = Listing::where('status', 'active')
+            ->selectRaw("DISTINCT CASE 
+                WHEN municipality IS NOT NULL AND municipality != '' 
+                THEN CONCAT(city, ', ', municipality) 
+                ELSE city 
+            END as location")
+            ->pluck('location')
+            ->sort()
+            ->values();
 
     return view('home', compact('featuredListings', 'newListings', 'categories', 'stats', 'allLocations'));
 }
@@ -184,21 +181,16 @@ class ListingController extends Controller
     $selectedCategory = $request->filled('category') ? $categories->find($request->category) : null;
     
     // Get all unique locations (FIXED VERSION)
-    $allLocations = Listing::where('status', 'active')
-        ->select('city', 'municipality')
-        ->distinct()
-        ->get()
-        ->map(function($listing) {
-            // Create formatted location strings
-            if ($listing->municipality) {
-                return $listing->city . ', ' . $listing->municipality;
-            }
-            return $listing->city;
-        })
-        ->filter() // Remove nulls
-        ->unique() // Remove duplicates
-        ->sort() // Sort alphabetically
-        ->values(); // Re-index array
+// Concatenates City and Municipality at the database level
+        $allLocations = Listing::where('status', 'active')
+            ->selectRaw("DISTINCT CASE 
+                WHEN municipality IS NOT NULL AND municipality != '' 
+                THEN CONCAT(city, ', ', municipality) 
+                ELSE city 
+            END as location")
+            ->pluck('location')
+            ->sort()
+            ->values();
 
     return view('listings.index', compact('listings', 'categories', 'allLocations', 'selectedCategory'));
 }

@@ -626,9 +626,10 @@ public function packageAnalytics(Request $request)
                 return $item->promoted_at->format('Y-m-d');
             });
 
-            for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
+for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
                 $dateKey = $date->format('Y-m-d');
-                $dayListings = $groupedByDay->get($dateKey, collect());
+                // FIXED: Use the collection from memory, do not query DB again
+                $dayListings = $groupedByDay->get($dateKey, collect()); 
                 
                 $revenue = $dayListings->sum(function($listing) {
                     return $listing->package ? $listing->package->price : 0;
@@ -651,6 +652,7 @@ public function packageAnalytics(Request $request)
             
             while ($currentDate <= $endDateMonth) {
                 $monthKey = $currentDate->format('Y-m');
+                // FIXED: Use the collection from memory
                 $monthListings = $groupedByMonth->get($monthKey, collect());
                 
                 $revenue = $monthListings->sum(function($listing) {
