@@ -26,20 +26,35 @@
 
             <!-- Favorite Button (Bottom Right) -->
             @auth
-                <form action="{{ route('listings.favorite', $listing->id) }}" method="POST" class="absolute bottom-2 right-2" onclick="event.stopPropagation()">
-                    @csrf
-                    <button type="submit" class="bg-white bg-opacity-90 hover:bg-opacity-100 p-2 rounded-full shadow-lg transition-all">
-                        <i class="fas fa-heart {{ $listing->isFavoritedBy(auth()->user()) ? 'text-red-500' : 'text-gray-400' }} text-lg"></i>
-                    </button>
-                </form>
+             <div class="absolute top-2 right-2 z-10" onclick="event.preventDefault(); event.stopPropagation();">
+                <x-favorite-button :listing="$listing" size="default" />
+            </div>
             @endauth
         </div>
 
         <!-- Content -->
         <div class="p-4 flex flex-col flex-grow listing-card-content">
-            <!-- Category -->
-            <div class="text-xs text-gray-500 mb-2">
-                <i class="fas fa-tag"></i> {{ $listing->category->name }}
+{{-- Category --}}
+            <div class="flex items-center text-xs text-gray-500 mb-2">
+                @if($listing->category)
+                    <span class="flex items-center">
+                        @if($listing->category->icon)
+                            <i class="{{ $listing->category->icon }} mr-1"></i>
+                        @endif
+                        {{ $listing->category->name }}
+                    </span>
+                @endif
+                
+                @if($listing->city)
+                    <span class="mx-2">•</span>
+                    <span class="flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {{ $listing->city }}
+                    </span>
+                @endif
             </div>
 
             <!-- Title -->

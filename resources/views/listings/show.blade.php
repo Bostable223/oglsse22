@@ -2,15 +2,6 @@
 
 @section('title', $listing->title)
 
-@section('breadcrumbs')
-    <x-breadcrumbs :items="[
-        ['title' => 'Oglasi', 'url' => route('listings.index')],
-        ['title' => $listing->category->name, 'url' => route('listings.index', ['category' => $listing->category_id])],
-        ['title' => $listing->city, 'url' => route('listings.index', ['city' => $listing->city])],
-        ['title' => \Str::limit($listing->title, 50), 'url' => route('listings.show', $listing->slug)]
-    ]" />
-@endsection
-
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
@@ -26,12 +17,39 @@
         <!-- Main Content -->
         <div class="lg:col-span-2">
             
-           <!-- Images Gallery -->
-@if($listing->images->count() > 0)
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden p-6 mb-6">
-        <x-image-gallery-main :images="$listing->images" :title="$listing->title" />
-    </div>
-@endif
+            <!-- Image Gallery -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+                @if($listing->images->count() > 0)
+                    <!-- Main Image -->
+                    <div class="relative h-96 bg-gray-200" id="mainImage">
+                        <img src="{{ listing_image($listing->images->first()->image_path, 'large') }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                        
+                        <!-- Featured Badge -->
+                        @if($listing->isFeaturedActive())
+                            <div class="absolute top-4 left-4 bg-yellow-500 text-white px-4 py-2 rounded-full font-semibold">
+                                <i class="fas fa-star"></i> Istaknuto
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Thumbnail Gallery -->
+                    @if($listing->images->count() > 1)
+                        <div class="p-4 grid grid-cols-6 gap-2">
+                            @foreach($listing->images as $image)
+                                <div class="cursor-pointer hover:opacity-75 transition-opacity">
+                                    <img src="{{ listing_image($image->image_path, 'thumbnail') }}" alt="Slika {{ $loop->iteration }}" 
+                                         class="w-full h-20 object-cover rounded"
+                                         onclick="document.getElementById('mainImage').querySelector('img').src = '{{ listing_image($image->image_path, 'large') }}'">
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                @else
+                    <div class="h-96 bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-image text-6xl text-gray-400"></i>
+                    </div>
+                @endif
+            </div>
 
             <!-- Listing Details -->
             <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -55,12 +73,6 @@
                         <i class="fas fa-tag"></i> {{ $listing->category->name }}
                     </div>
                     <h1 class="text-3xl font-bold text-gray-900">{{ $listing->title }}</h1>
-                    
-                    <!-- Listing ID and Date -->
-                    <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                        <span><i class="fas fa-hashtag"></i> ID: {{ $listing->id }}</span>
-                        <span><i class="fas fa-calendar"></i> Objavljeno: {{ $listing->published_at->format('d.m.Y') }}</span>
-                    </div>
                 </div>
 
                 <!-- Location -->
@@ -75,23 +87,13 @@
 
                 <!-- Price -->
                 <div class="mb-6 pb-6 border-b border-gray-200">
-    <div class="text-4xl font-bold text-blue-600">
-        {{ $listing->formattedPrice() }}
-    </div>
-    <div class="text-sm text-gray-600 mt-1">
-        {{ $listing->listing_type == 'sale' ? 'Prodajna cena' : 'Mesečna kirija' }}
-    </div>
-
-    @if($listing->price && $listing->area && $listing->area > 0)
-        <div class="text-sm text-gray-600 mt-1">
-            Cena po m²: 
-            <span class="font-semibold text-gray-800">
-                {{ number_format($listing->price / $listing->area, 0, ',', '.') }} €/m²
-            </span>
-        </div>
-    @endif
-</div>
-
+                    <div class="text-4xl font-bold text-blue-600">
+                        {{ $listing->formattedPrice() }}
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        {{ $listing->listing_type == 'sale' ? 'Prodajna cena' : 'Mesečna kirija' }}
+                    </div>
+                </div>
 
                 <!-- Property Details Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -161,39 +163,15 @@
                 </div>
             </div>
 
-            <!-- Recommended Listings Slider -->
+            <!-- Recommended Listings (Bottom) -->
             @if($similarListings->count() > 0)
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-2xl font-bold">Preporučeni oglasi</h3>
-                    <div class="flex gap-2">
-                        <button onclick="slideRecommended('prev')" class="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                            <i class="fas fa-chevron-left text-gray-600"></i>
-                        </button>
-                        <button onclick="slideRecommended('next')" class="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                            <i class="fas fa-chevron-right text-gray-600"></i>
-                        </button>
-                    </div>
+                <h3 class="text-2xl font-bold mb-6">Preporučeni oglasi</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    @foreach($similarListings as $similar)
+                        @include('partials.listing-card', ['listing' => $similar])
+                    @endforeach
                 </div>
-                
-                <div class="relative overflow-hidden">
-                    <div id="recommendedSlider" class="flex transition-transform duration-300 ease-in-out">
-                        @foreach($similarListings as $similar)
-                            <div class="w-full md:w-1/3 flex-shrink-0 px-3">
-                                @include('partials.listing-card', ['listing' => $similar])
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                <!-- Slider Dots -->
-                @if($similarListings->count() > 3)
-                <div class="flex justify-center gap-2 mt-4">
-                    @for($i = 0; $i < ceil($similarListings->count() / 3); $i++)
-                        <button onclick="goToSlide({{ $i }})" class="slider-dot w-2 h-2 rounded-full bg-gray-300 hover:bg-gray-400 transition-colors" data-slide="{{ $i }}"></button>
-                    @endfor
-                </div>
-                @endif
             </div>
             @endif
         </div>
@@ -276,108 +254,11 @@
 
 @push('scripts')
 <script>
-// Image Gallery Slider
-let currentImageIndex = 0;
-const totalImages = {{ $listing->images->count() }};
-
-function changeImage(direction) {
-    const slides = document.querySelectorAll('#imageSlider [data-slide]');
-    const thumbnails = document.querySelectorAll('[data-thumbnail]');
-    
-    // Hide current image
-    slides[currentImageIndex].classList.remove('opacity-100');
-    slides[currentImageIndex].classList.add('opacity-0');
-    thumbnails[currentImageIndex].classList.remove('border-blue-500');
-    thumbnails[currentImageIndex].classList.add('border-transparent');
-    
-    // Calculate new index
-    if (direction === 'next') {
-        currentImageIndex = (currentImageIndex + 1) % totalImages;
-    } else {
-        currentImageIndex = (currentImageIndex - 1 + totalImages) % totalImages;
-    }
-    
-    // Show new image
-    slides[currentImageIndex].classList.remove('opacity-0');
-    slides[currentImageIndex].classList.add('opacity-100');
-    thumbnails[currentImageIndex].classList.remove('border-transparent');
-    thumbnails[currentImageIndex].classList.add('border-blue-500');
-    
-    // Update counter
-    document.getElementById('currentImageIndex').textContent = currentImageIndex + 1;
-}
-
-function goToImage(index) {
-    const slides = document.querySelectorAll('#imageSlider [data-slide]');
-    const thumbnails = document.querySelectorAll('[data-thumbnail]');
-    
-    // Hide current image
-    slides[currentImageIndex].classList.remove('opacity-100');
-    slides[currentImageIndex].classList.add('opacity-0');
-    thumbnails[currentImageIndex].classList.remove('border-blue-500');
-    thumbnails[currentImageIndex].classList.add('border-transparent');
-    
-    // Update index
-    currentImageIndex = index;
-    
-    // Show new image
-    slides[currentImageIndex].classList.remove('opacity-0');
-    slides[currentImageIndex].classList.add('opacity-100');
-    thumbnails[currentImageIndex].classList.remove('border-transparent');
-    thumbnails[currentImageIndex].classList.add('border-blue-500');
-    
-    // Update counter
-    document.getElementById('currentImageIndex').textContent = currentImageIndex + 1;
-}
-
 // Phone Number Reveal
 function revealPhone() {
     document.getElementById('phoneButton').classList.add('hidden');
     document.getElementById('phoneLink').classList.remove('hidden');
 }
-
-// Recommended Listings Slider
-let currentSlide = 0;
-const totalListings = {{ $similarListings->count() }};
-const slidesPerView = window.innerWidth >= 768 ? 3 : 1;
-const maxSlide = Math.max(0, totalListings - slidesPerView);
-
-function slideRecommended(direction) {
-    const slider = document.getElementById('recommendedSlider');
-    const slideWidth = slider.children[0].offsetWidth;
-    
-    if (direction === 'next') {
-        currentSlide = Math.min(currentSlide + 1, maxSlide);
-    } else {
-        currentSlide = Math.max(currentSlide - 1, 0);
-    }
-    
-    slider.style.transform = `translateX(-${currentSlide * slideWidth}px)`;
-    updateDots();
-}
-
-function goToSlide(index) {
-    currentSlide = index;
-    const slider = document.getElementById('recommendedSlider');
-    const slideWidth = slider.children[0].offsetWidth;
-    slider.style.transform = `translateX(-${currentSlide * slideWidth}px)`;
-    updateDots();
-}
-
-function updateDots() {
-    document.querySelectorAll('.slider-dot').forEach((dot, index) => {
-        if (index === currentSlide) {
-            dot.classList.remove('bg-gray-300');
-            dot.classList.add('bg-blue-600');
-        } else {
-            dot.classList.remove('bg-blue-600');
-            dot.classList.add('bg-gray-300');
-        }
-    });
-}
-
-// Initialize dots
-updateDots();
 
 // Recently Viewed Listings
 const currentListing = {

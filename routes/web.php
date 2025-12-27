@@ -53,9 +53,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
 });
     
-    // Favorite functionality
-    Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])
-         ->name('listings.favorite');
+// Favorite toggle route
+Route::post('/listings/{id}/favorite', [UserDashboardController::class, 'toggleFavorite'])
+    ->middleware('auth')
+    ->name('listings.favorite');
 
          
 });
